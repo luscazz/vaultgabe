@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Análise de mercado — VaultGabe</title>
+  <meta name="description" content="Indicadores, gráficos e rankings do mercado de skins do VaultGabe.">
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/css/estilo.css">
+  <script type="module" src="/js/analise.js"></script>
+</head>
+<body>
+  <header id="topo"></header>
+
+  <main class="container">
+    <div class="cabecalho-pagina">
+      <div>
+        <h1>Análise de mercado</h1>
+        <p>Volume, preços e rankings das negociações concluídas no VaultGabe.</p>
+      </div>
+    </div>
+
+    <p class="aviso"><strong>Dados simulados para demonstração.</strong> Os preços e as vendas não representam o mercado real de Counter-Strike 2.
+      Com poucas vendas, médias e variações mudam muito: confira sempre o número de vendas ao lado de cada valor.</p>
+
+    <form id="filtros-analise" class="painel secao barra-ferramentas filtros-analise" autocomplete="off">
+      <div class="periodos" role="group" aria-label="Períodos prontos" aria-describedby="nota-periodos">
+        <button type="button" class="botao botao-pequeno" data-dias="30" aria-pressed="false">Últimos 30 dias</button>
+        <button type="button" class="botao botao-pequeno" data-dias="90" aria-pressed="false">Últimos 90 dias</button>
+        <button type="button" class="botao botao-pequeno" data-dias="365" aria-pressed="false">Últimos 12 meses</button>
+        <button type="button" class="botao botao-pequeno" data-dias="" aria-pressed="true">Todo o período</button>
+      </div>
+      <p id="nota-periodos" class="texto-suave nota-periodos oculto"></p>
+      <label class="campo">
+        <span class="rotulo">De</span>
+        <input type="date" name="inicio">
+      </label>
+      <label class="campo">
+        <span class="rotulo">Até</span>
+        <input type="date" name="fim">
+      </label>
+      <label class="campo">
+        <span class="rotulo">Categoria</span>
+        <select name="categoria" id="filtro-categoria-analise">
+          <option value="">Todas</option>
+        </select>
+      </label>
+      <button type="submit" class="botao botao-primario">Aplicar</button>
+    </form>
+    <p id="erro-filtro" class="aviso aviso-erro oculto" role="alert"></p>
+    <p id="resumo-filtro" class="texto-suave" role="status"></p>
+    <p id="aviso-amostra" class="aviso oculto"></p>
+
+    <div id="conteudo-analise">
+      <div class="indicadores secao">
+        <div class="indicador"><span class="rotulo">Volume vendido</span><span class="valor" id="ind-volume">—</span></div>
+        <div class="indicador"><span class="rotulo">Vendas</span><span class="valor" id="ind-vendas">—</span></div>
+        <div class="indicador"><span class="rotulo">Ticket médio</span><span class="valor" id="ind-ticket">—</span></div>
+        <div class="indicador"><span class="rotulo">Ofertas à venda</span><span class="valor" id="ind-ofertas">—</span></div>
+      </div>
+
+      <div class="grade-graficos secao">
+        <section class="painel largo" aria-labelledby="t-volume-mes">
+          <h2 id="t-volume-mes">Volume vendido por mês</h2>
+          <p class="texto-suave">Soma das vendas concluídas em cada mês (R$).</p>
+          <div class="area-grafico" id="grafico-volume-mes"></div>
+        </section>
+        <section class="painel" aria-labelledby="t-ticket-mes">
+          <h2 id="t-ticket-mes">Ticket médio por mês</h2>
+          <p class="texto-suave">Valor médio de uma venda em cada mês. Muda com o tipo de item vendido.</p>
+          <div class="area-grafico" id="grafico-ticket-mes"></div>
+        </section>
+        <section class="painel" aria-labelledby="t-raridade">
+          <h2 id="t-raridade">Preço médio por raridade</h2>
+          <p class="texto-suave">Média das vendas de cada raridade no período.</p>
+          <div id="grafico-raridade"></div>
+        </section>
+        <section class="painel" aria-labelledby="t-categoria">
+          <h2 id="t-categoria">Volume por categoria</h2>
+          <p class="texto-suave">Quanto foi negociado em cada categoria (R$).</p>
+          <div id="grafico-categoria"></div>
+        </section>
+        <section class="painel" aria-labelledby="t-mais-negociadas">
+          <h2 id="t-mais-negociadas">Skins mais negociadas</h2>
+          <p class="texto-suave">As 10 com mais vendas no período.</p>
+          <div id="ranking-mais-negociadas"></div>
+        </section>
+        <section class="painel" aria-labelledby="t-variacoes">
+          <h2 id="t-variacoes">Maiores variações de preço</h2>
+          <p class="texto-suave">Primeira e última venda de cada skin no período (mínimo de 2 vendas).</p>
+          <div id="ranking-variacoes"></div>
+        </section>
+        <section class="painel largo" aria-labelledby="t-vendedores">
+          <h2 id="t-vendedores">Vendedores mais bem avaliados</h2>
+          <p class="texto-suave">Nota dada pelos compradores nas vendas de cada usuário (todas as vendas, não só as do período; notas de trocas não entram).</p>
+          <div id="ranking-vendedores"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer id="rodape"></footer>
+</body>
+</html>

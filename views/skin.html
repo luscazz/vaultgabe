@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skin — VaultGabe</title>
+  <meta name="description" content="Ofertas, preços registrados e reputação dos vendedores de uma skin.">
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/css/estilo.css">
+  <script type="module" src="/js/skin.js"></script>
+</head>
+<body>
+  <header id="topo"></header>
+
+  <main class="container">
+    <p><a href="/" id="voltar">← Voltar ao catálogo</a></p>
+
+    <div id="conteudo-skin">
+      <section class="cabecalho-item" aria-labelledby="nome-modelo">
+        <div class="card-imagem imagem-grande" id="imagem-modelo"></div>
+        <div>
+          <div id="selos-modelo" class="selos"></div>
+          <h1 id="nome-modelo">Carregando…</h1>
+          <p id="info-modelo" class="texto-suave"></p>
+          <p id="descricao-modelo"></p>
+          <div class="indicadores">
+            <div class="indicador"><span class="rotulo">Menor preço</span><span class="valor" id="ind-menor-preco">—</span></div>
+            <div class="indicador"><span class="rotulo">Média das vendas</span><span class="valor" id="ind-preco-medio">—</span></div>
+            <div class="indicador"><span class="rotulo">Vendas</span><span class="valor" id="ind-vendas">—</span></div>
+            <div class="indicador"><span class="rotulo">Ofertas à venda</span><span class="valor" id="ind-ofertas">—</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="secao" aria-labelledby="titulo-ofertas">
+        <div class="titulo-secao">
+          <h2 id="titulo-ofertas" tabindex="-1">Anúncios ativos</h2>
+          <form id="filtros-ofertas" class="filtros-ofertas" autocomplete="off">
+            <fieldset class="chips oculto" id="filtros-equipamento">
+              <legend class="visualmente-oculto">Filtros da oferta</legend>
+              <label class="chip" title="Factory New"><input type="checkbox" name="desgaste" value="FN" aria-label="Factory New (FN)"><span>FN</span></label>
+              <label class="chip" title="Minimal Wear"><input type="checkbox" name="desgaste" value="MW" aria-label="Minimal Wear (MW)"><span>MW</span></label>
+              <label class="chip" title="Field-Tested"><input type="checkbox" name="desgaste" value="FT" aria-label="Field-Tested (FT)"><span>FT</span></label>
+              <label class="chip" title="Well-Worn"><input type="checkbox" name="desgaste" value="WW" aria-label="Well-Worn (WW)"><span>WW</span></label>
+              <label class="chip" title="Battle-Scarred"><input type="checkbox" name="desgaste" value="BS" aria-label="Battle-Scarred (BS)"><span>BS</span></label>
+              <label class="chip"><input type="checkbox" name="stattrak"><span>StatTrak™</span></label>
+              <label class="chip"><input type="checkbox" name="souvenir"><span>Souvenir</span></label>
+              <label class="chip"><input type="checkbox" name="com_adesivos"><span>Com adesivos</span></label>
+              <select name="ordenar" aria-label="Ordenar ofertas">
+                <option value="preco">Menor preço</option>
+                <option value="float">Menor float</option>
+              </select>
+            </fieldset>
+          </form>
+        </div>
+        <div id="tabela-ofertas" class="esqueleto" aria-busy="true"></div>
+        <p id="status-ofertas" class="visualmente-oculto" role="status"></p>
+      </section>
+
+      <section class="secao" aria-labelledby="titulo-historico">
+        <h2 id="titulo-historico">Preços registrados</h2>
+        <p id="resumo-historico" class="texto-suave"></p>
+        <div class="painel grafico-precos oculto" id="painel-grafico-precos">
+          <h3>Preço ao longo do tempo</h3>
+          <p class="texto-suave">Preço médio das vendas de cada mês; a faixa clara vai da venda mais barata à mais cara.</p>
+          <div id="grafico-precos"></div>
+        </div>
+        <div id="tabela-historico" class="esqueleto" aria-busy="true"></div>
+      </section>
+    </div>
+  </main>
+
+  <dialog class="janela" id="janela-comprar" aria-labelledby="titulo-comprar">
+    <form id="form-comprar">
+      <div class="janela-cabecalho">
+        <h2 id="titulo-comprar">Comprar</h2>
+        <button type="button" class="fechar" data-fechar aria-label="Fechar">×</button>
+      </div>
+
+      <div class="janela-corpo" id="etapa-confirmar">
+        <div id="resumo-compra" class="resumo-compra"></div>
+        <fieldset class="campo">
+          <legend>Forma de pagamento</legend>
+          <label class="opcao"><input type="radio" name="metodo" value="pix" checked> Pix</label>
+          <label class="opcao"><input type="radio" name="metodo" value="cartao_credito"> Cartão de crédito</label>
+          <label class="opcao"><input type="radio" name="metodo" value="cartao_debito"> Cartão de débito</label>
+          <label class="opcao"><input type="radio" name="metodo" value="boleto"> Boleto</label>
+          <label class="opcao"><input type="radio" name="metodo" value="saldo_steam"> Saldo Steam</label>
+        </fieldset>
+        <p class="aviso">Pagamento simulado: a compra é aprovada na hora e o item vai para o seu inventário.</p>
+        <p class="aviso aviso-erro oculto" id="erro-compra" role="alert"></p>
+      </div>
+
+      <div class="janela-corpo oculto" id="etapa-concluida" aria-live="polite">
+        <p class="compra-concluida" id="compra-concluida" tabindex="-1">Compra concluída!</p>
+        <dl class="dados-compra">
+          <dt>Protocolo da venda</dt><dd id="protocolo-compra"></dd>
+          <dt>Chave da nota fiscal</dt><dd id="chave-compra" class="chave-nf"></dd>
+        </dl>
+      </div>
+
+      <div class="janela-acoes" id="acoes-confirmar">
+        <button type="button" class="botao" data-fechar id="cancelar-compra">Cancelar</button>
+        <button type="submit" class="botao botao-primario" id="confirmar-compra">Confirmar compra</button>
+      </div>
+      <div class="janela-acoes oculto" id="acoes-concluida">
+        <a class="botao" href="/negociacoes?aba=comprados">Ver minhas compras</a>
+        <a class="botao" href="/inventario">Ver no inventário</a>
+        <button type="button" class="botao botao-primario" data-fechar>Continuar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer id="rodape"></footer>
+</body>
+</html>

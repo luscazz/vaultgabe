@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inventário — VaultGabe</title>
+  <meta name="description" content="Os itens do usuário e o que pode ser anunciado.">
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/css/estilo.css">
+  <script type="module" src="/js/inventario.js"></script>
+</head>
+<body>
+  <header id="topo"></header>
+
+  <main class="container">
+    <div class="cabecalho-pagina">
+      <div>
+        <h1 id="titulo-inventario">Inventário</h1>
+        <p id="dono-inventario">Os itens do usuário selecionado em "Entrar como".</p>
+      </div>
+      <a class="botao" href="/negociacoes">Ver minhas negociações</a>
+    </div>
+
+    <div class="indicadores">
+      <div class="indicador"><span class="rotulo">Itens</span><span class="valor" id="ind-itens">—</span></div>
+      <div class="indicador"><span class="rotulo">Negociáveis</span><span class="valor" id="ind-negociaveis">—</span></div>
+      <div class="indicador"><span class="rotulo">Anunciados</span><span class="valor" id="ind-anunciados">—</span></div>
+      <div class="indicador"><span class="rotulo">Prontos para anunciar</span><span class="valor" id="ind-prontos">—</span></div>
+    </div>
+
+    <section class="secao" aria-labelledby="titulo-itens">
+      <h2 id="titulo-itens" class="visualmente-oculto" tabindex="-1">Itens</h2>
+      <div class="barra-ferramentas">
+        <div class="abas" role="tablist" aria-label="Tipo de item" id="abas-tipo">
+          <button type="button" role="tab" id="aba-todos" aria-selected="true" aria-controls="grade-inventario" data-tipo="">Todos <span class="contador"></span></button>
+          <button type="button" role="tab" id="aba-equipamento" aria-selected="false" aria-controls="grade-inventario" tabindex="-1" data-tipo="equipamento">Armas e equipamentos <span class="contador"></span></button>
+          <button type="button" role="tab" id="aba-cosmetico" aria-selected="false" aria-controls="grade-inventario" tabindex="-1" data-tipo="cosmetico">Adesivos e chaveiros <span class="contador"></span></button>
+          <button type="button" role="tab" id="aba-consumivel" aria-selected="false" aria-controls="grade-inventario" tabindex="-1" data-tipo="consumivel">Caixas e consumíveis <span class="contador"></span></button>
+        </div>
+        <label class="opcao"><input type="checkbox" id="so-negociaveis"> Só os que posso anunciar</label>
+      </div>
+
+      <div id="grade-inventario" class="grade-cards" role="tabpanel" aria-labelledby="aba-todos" aria-busy="true">
+        <div class="esqueleto"></div>
+        <div class="esqueleto"></div>
+        <div class="esqueleto"></div>
+        <div class="esqueleto"></div>
+      </div>
+      <p id="status-inventario" class="visualmente-oculto" role="status"></p>
+    </section>
+  </main>
+
+  <dialog class="janela" id="janela-anunciar" aria-labelledby="titulo-anunciar">
+    <form id="form-anunciar" novalidate>
+      <div class="janela-cabecalho">
+        <h2 id="titulo-anunciar">Anunciar item</h2>
+        <button type="button" class="fechar" data-fechar aria-label="Fechar">×</button>
+      </div>
+
+      <div class="janela-corpo" id="etapa-anunciar">
+        <div id="resumo-anuncio" class="resumo-compra"></div>
+        <div class="campo">
+          <label for="preco-anuncio">Preço (R$)</label>
+          <input type="text" id="preco-anuncio" name="preco" inputmode="decimal" autocomplete="off" placeholder="0,00" required aria-describedby="analise-preco">
+          <div class="sugestoes-preco" id="sugestoes-preco"></div>
+        </div>
+        <fieldset class="campo">
+          <legend>Validade</legend>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="dias" value="7" checked><span>7 dias</span></label>
+            <label class="chip"><input type="radio" name="dias" value="14"><span>14 dias</span></label>
+            <label class="chip"><input type="radio" name="dias" value="30"><span>30 dias</span></label>
+          </div>
+        </fieldset>
+        <div class="aviso quadro-analise" id="analise-preco">
+          <strong>Análise de preço</strong>
+          <dl>
+            <dt>Menor oferta atual</dt><dd id="ap-menor">—</dd>
+            <dt>Média das vendas</dt><dd id="ap-media">—</dd>
+          </dl>
+          <p id="ap-diferenca"></p>
+        </div>
+        <p id="ap-status" class="visualmente-oculto" role="status"></p>
+        <p class="aviso aviso-erro oculto" id="erro-anuncio" role="alert"></p>
+      </div>
+
+      <div class="janela-corpo oculto" id="etapa-publicado">
+        <p class="compra-concluida" id="anuncio-publicado" tabindex="-1">Anúncio publicado!</p>
+        <dl class="dados-compra">
+          <dt>Preço</dt><dd id="publicado-preco"></dd>
+          <dt>Válido até</dt><dd id="publicado-validade"></dd>
+        </dl>
+        <p class="texto-suave">O item já aparece nas ofertas da página da skin e em Negociações › À venda.</p>
+      </div>
+
+      <div class="janela-acoes" id="acoes-anunciar">
+        <button type="button" class="botao" data-fechar id="cancelar-anuncio">Cancelar</button>
+        <button type="submit" class="botao botao-primario" id="publicar-anuncio">Publicar anúncio</button>
+      </div>
+      <div class="janela-acoes oculto" id="acoes-publicado">
+        <a class="botao" href="/negociacoes">Ver em Negociações</a>
+        <a class="botao" id="link-skin-anunciada" href="/">Ver a página da skin</a>
+        <button type="button" class="botao botao-primario" data-fechar>Continuar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer id="rodape"></footer>
+</body>
+</html>

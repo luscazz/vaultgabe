@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Negociações — VaultGabe</title>
+  <meta name="description" content="Anúncios, vendas e compras do usuário.">
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/css/estilo.css">
+  <script type="module" src="/js/negociacoes.js"></script>
+</head>
+<body>
+  <header id="topo"></header>
+
+  <main class="container">
+    <div class="cabecalho-pagina">
+      <div>
+        <h1 id="titulo-negociacoes">Negociações</h1>
+        <p id="subtitulo-negociacoes">O que você está vendendo, o que já vendeu e o que comprou.</p>
+      </div>
+      <a class="botao botao-primario" href="/inventario?negociaveis=1">+ Anunciar um item</a>
+    </div>
+
+    <p id="aviso-acao" class="aviso aviso-sucesso oculto" role="status"></p>
+
+    <div class="abas" role="tablist" aria-label="Negociações" id="abas-negociacoes">
+      <button type="button" role="tab" id="aba-a_venda" aria-selected="true" aria-controls="conteudo-aba" data-aba="a_venda">À venda <span class="contador" id="cont-a_venda"></span></button>
+      <button type="button" role="tab" id="aba-vendidos" aria-selected="false" aria-controls="conteudo-aba" tabindex="-1" data-aba="vendidos">Vendidos <span class="contador" id="cont-vendidos"></span></button>
+      <button type="button" role="tab" id="aba-comprados" aria-selected="false" aria-controls="conteudo-aba" tabindex="-1" data-aba="comprados">Comprados <span class="contador" id="cont-comprados"></span></button>
+      <button type="button" role="tab" id="aba-encerrados" aria-selected="false" aria-controls="conteudo-aba" tabindex="-1" data-aba="encerrados">Encerrados <span class="contador" id="cont-encerrados"></span></button>
+    </div>
+
+    <h2 class="visualmente-oculto" id="titulo-aba" tabindex="-1">À venda</h2>
+    <div id="conteudo-aba" class="esqueleto" role="tabpanel" aria-labelledby="aba-a_venda" aria-busy="true"></div>
+  </main>
+
+  <dialog class="janela" id="janela-cancelar" aria-labelledby="titulo-cancelar">
+    <form id="form-cancelar">
+      <div class="janela-cabecalho">
+        <h2 id="titulo-cancelar">Cancelar anúncio?</h2>
+        <button type="button" class="fechar" data-fechar aria-label="Fechar">×</button>
+      </div>
+      <div class="janela-corpo">
+        <div id="resumo-cancelar" class="resumo-compra"></div>
+        <p>O item sai das ofertas e volta a ficar disponível no seu inventário. O anúncio vai para a aba Encerrados.</p>
+        <p class="aviso aviso-erro oculto" id="erro-cancelar" role="alert"></p>
+      </div>
+      <div class="janela-acoes">
+        <button type="button" class="botao" data-fechar id="manter-anuncio">Manter anúncio</button>
+        <button type="submit" class="botao botao-perigo" id="confirmar-cancelar">Cancelar anúncio</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="janela" id="janela-avaliar" aria-labelledby="titulo-avaliar">
+    <form id="form-avaliar">
+      <div class="janela-cabecalho">
+        <h2 id="titulo-avaliar">Avaliar vendedor</h2>
+        <button type="button" class="fechar" data-fechar aria-label="Fechar">×</button>
+      </div>
+
+      <div class="janela-corpo" id="etapa-avaliar">
+        <p id="compra-avaliada" class="texto-suave"></p>
+        <fieldset class="campo">
+          <legend>Nota</legend>
+          <div class="estrelas">
+            <label><input type="radio" name="nota" value="1"><span>1</span><span class="visualmente-oculto"> — muito ruim</span></label>
+            <label><input type="radio" name="nota" value="2"><span>2</span><span class="visualmente-oculto"> — ruim</span></label>
+            <label><input type="radio" name="nota" value="3"><span>3</span><span class="visualmente-oculto"> — regular</span></label>
+            <label><input type="radio" name="nota" value="4"><span>4</span><span class="visualmente-oculto"> — boa</span></label>
+            <label><input type="radio" name="nota" value="5" checked><span>5</span><span class="visualmente-oculto"> — excelente</span></label>
+          </div>
+        </fieldset>
+        <div class="campo">
+          <label for="comentario">Comentário (opcional)</label>
+          <textarea id="comentario" name="comentario" rows="3" maxlength="500" aria-describedby="contador-comentario"></textarea>
+          <small class="texto-suave" id="contador-comentario">0 de 500 caracteres</small>
+        </div>
+        <p class="aviso aviso-erro oculto" id="erro-avaliacao" role="alert"></p>
+      </div>
+
+      <div class="janela-corpo oculto" id="etapa-avaliada">
+        <p class="compra-concluida" id="avaliacao-enviada" tabindex="-1">Avaliação enviada!</p>
+        <dl class="dados-compra">
+          <dt>Ticket da avaliação</dt><dd id="ticket-avaliacao"></dd>
+        </dl>
+        <p class="texto-suave">A nota já conta na reputação do vendedor (página do perfil e ofertas).</p>
+      </div>
+
+      <div class="janela-acoes" id="acoes-avaliar">
+        <button type="button" class="botao" data-fechar id="cancelar-avaliacao">Cancelar</button>
+        <button type="submit" class="botao botao-primario" id="enviar-avaliacao">Enviar avaliação</button>
+      </div>
+      <div class="janela-acoes oculto" id="acoes-avaliada">
+        <a class="botao" id="link-perfil-avaliado" href="/">Ver perfil do vendedor</a>
+        <button type="button" class="botao botao-primario" data-fechar>Continuar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer id="rodape"></footer>
+</body>
+</html>

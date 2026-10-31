@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Perfil — VaultGabe</title>
+  <meta name="description" content="Reputação, avaliações e histórico de um usuário do VaultGabe.">
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/css/estilo.css">
+  <script type="module" src="/js/perfil.js"></script>
+</head>
+<body>
+  <header id="topo"></header>
+
+  <main class="container">
+    <div id="conteudo-perfil">
+      <div class="cabecalho-pagina">
+        <div class="perfil-identidade">
+          <div class="avatar" id="avatar" aria-hidden="true">?</div>
+          <div>
+            <h1 id="apelido">Carregando…</h1>
+            <p id="dados-usuario"></p>
+          </div>
+        </div>
+        <div id="acoes-perfil" class="acoes-perfil oculto">
+          <a class="botao" href="/inventario">Meu inventário</a>
+          <a class="botao" href="/negociacoes">Minhas negociações</a>
+        </div>
+      </div>
+
+      <p id="aviso-steam-guard" class="aviso aviso-atencao oculto">
+        <strong>Steam Guard desativado.</strong> Sem o autenticador móvel, a Steam segura por até 15 dias os itens
+        que este usuário envia. Por isso as entregas das vendas dele demoram mais para chegar.
+      </p>
+
+      <div class="indicadores">
+        <div class="indicador"><span class="rotulo">Nota média</span><span class="valor" id="ind-nota">—</span></div>
+        <div class="indicador"><span class="rotulo">Vendas concluídas</span><span class="valor" id="ind-vendas">—</span></div>
+        <div class="indicador"><span class="rotulo">Compras concluídas</span><span class="valor" id="ind-compras">—</span></div>
+        <div class="indicador"><span class="rotulo">Trocas concluídas</span><span class="valor" id="ind-trocas">—</span></div>
+      </div>
+
+      <section class="secao" aria-labelledby="t-anuncios">
+        <h2 id="t-anuncios">Anúncios ativos</h2>
+        <div id="anuncios-usuario" class="grade-cards" aria-busy="true"><div class="esqueleto"></div></div>
+      </section>
+
+      <section class="secao" aria-labelledby="t-avaliacoes">
+        <h2 id="t-avaliacoes">Avaliações recebidas</h2>
+        <div id="avaliacoes-usuario" aria-busy="true"><div class="esqueleto"></div></div>
+      </section>
+
+      <section class="secao" aria-labelledby="t-trocas">
+        <h2 id="t-trocas">Histórico de trocas</h2>
+        <p class="texto-suave subtitulo-secao">Somente consulta: as trocas são registradas no banco, mas não são feitas pelo site.</p>
+        <div id="trocas-usuario" aria-busy="true"><div class="esqueleto"></div></div>
+      </section>
+    </div>
+  </main>
+
+  <footer id="rodape"></footer>
+</body>
+</html>

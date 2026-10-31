@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catálogo — VaultGabe</title>
+  <meta name="description" content="Pesquise skins de Counter-Strike 2 e compare as ofertas do VaultGabe.">
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/css/estilo.css">
+  <script type="module" src="/js/catalogo.js"></script>
+</head>
+<body>
+  <header id="topo"></header>
+
+  <main class="container">
+    <div class="cabecalho-pagina">
+      <div>
+        <h1>Catálogo</h1>
+        <p>Pesquise skins, combine filtros e veja por quanto cada uma está à venda.</p>
+      </div>
+    </div>
+
+    <button type="button" class="botao botao-bloco botao-filtros" id="mostrar-filtros"
+            aria-expanded="false" aria-controls="painel-filtros">Filtros</button>
+
+    <div class="layout-lateral">
+      <aside class="painel" id="painel-filtros">
+        <form id="filtros" autocomplete="off">
+          <div class="campo">
+            <label for="busca">Buscar</label>
+            <input type="search" id="busca" name="busca" placeholder="Ex.: AK-47, Doppler…">
+          </div>
+
+          <fieldset class="campo">
+            <legend>Categoria</legend>
+            <div class="lista-opcoes" id="filtro-categorias"><span class="texto-suave">Carregando…</span></div>
+          </fieldset>
+
+          <fieldset class="campo">
+            <legend>Raridade</legend>
+            <div class="lista-opcoes" id="filtro-raridades"><span class="texto-suave">Carregando…</span></div>
+          </fieldset>
+
+          <div class="campo">
+            <label for="colecao">Coleção</label>
+            <select id="colecao" name="colecao">
+              <option value="">Todas</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <span class="rotulo">Preço (R$)</span>
+            <div class="par-campos">
+              <input type="number" id="preco-min" name="preco_min" min="0" step="0.01" placeholder="Mín." aria-label="Preço mínimo">
+              <input type="number" id="preco-max" name="preco_max" min="0" step="0.01" placeholder="Máx." aria-label="Preço máximo">
+            </div>
+            <label class="opcao"><input type="checkbox" name="so_a_venda"> Só com anúncio ativo</label>
+          </div>
+
+          <fieldset class="campo">
+            <legend>Oferta (armas, facas e luvas)</legend>
+            <label class="opcao"><input type="checkbox" name="desgaste" value="FN"> Factory New</label>
+            <label class="opcao"><input type="checkbox" name="desgaste" value="MW"> Minimal Wear</label>
+            <label class="opcao"><input type="checkbox" name="desgaste" value="FT"> Field-Tested</label>
+            <label class="opcao"><input type="checkbox" name="desgaste" value="WW"> Well-Worn</label>
+            <label class="opcao"><input type="checkbox" name="desgaste" value="BS"> Battle-Scarred</label>
+            <label class="opcao"><input type="checkbox" name="stattrak"> StatTrak™</label>
+            <label class="opcao"><input type="checkbox" name="souvenir"> Souvenir</label>
+            <label class="opcao"><input type="checkbox" name="com_adesivos"> Com adesivos</label>
+          </fieldset>
+
+          <button type="reset" class="botao botao-bloco">Limpar filtros</button>
+        </form>
+      </aside>
+
+      <section aria-labelledby="titulo-resultados">
+        <div class="barra-ferramentas">
+          <h2 id="titulo-resultados"><span id="total-resultados">—</span> skins</h2>
+          <label class="campo-ordenar">
+            <span class="texto-suave">Ordenar por</span>
+            <select id="ordenar" name="ordenar">
+              <option value="menor_preco">Menor preço</option>
+              <option value="maior_preco">Maior preço</option>
+              <option value="mais_ofertas">Mais ofertas</option>
+              <option value="mais_vendidas">Mais vendidas</option>
+              <option value="nome">Nome</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="grade-catalogo" class="grade-cards">
+          <div class="esqueleto"></div>
+          <div class="esqueleto"></div>
+          <div class="esqueleto"></div>
+          <div class="esqueleto"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer id="rodape"></footer>
+</body>
+</html>

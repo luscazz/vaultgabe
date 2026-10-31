@@ -1,0 +1,26 @@
+{
+  "name": "vaultgabe",
+  "version": "1.0.0",
+  "description": "Marketplace de skins de Counter-Strike 2 — Banco de Dados II",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "dev": "node --watch-path=src --watch-path=database/consultas --env-file-if-exists=.env src/server.js",
+    "test": "node tests/executar.mjs",
+    "test:neon": "node --env-file=.env tests/executar.mjs --neon",
+    "banco:dev": "node --env-file=.env database/carregar.mjs development",
+    "banco:producao": "node --env-file=.env database/carregar.mjs production"
+  },
+  "engines": {
+    "node": ">=22.9"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17"
+  }
+}
