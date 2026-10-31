@@ -4,7 +4,9 @@
 
 Marketplace de skins de Counter-Strike 2: busca no catálogo com filtros combinados, inventário de cada usuário, publicação e cancelamento de anúncios, compra com pagamento simulado e avaliação do vendedor.
 
-Projeto da disciplina **Banco de Dados II**, construído sobre o banco desenvolvido em Banco de Dados I: as mesmas 20 tabelas, com acréscimos para a aplicação (índices, visões, funções e triggers) e as correções listadas em [`docs/mapeamento_banco.md`](docs/mapeamento_banco.md), seção 8.
+**Aplicação no ar:** https://vaultgabe.onrender.com (no plano gratuito do Render, o primeiro acesso depois de um tempo sem uso pode levar cerca de 1 minuto)
+
+Projeto da disciplina **Banco de Dados II**, construído sobre o banco desenvolvido em Banco de Dados I: as mesmas 20 tabelas, com acréscimos para a aplicação (índices, visões, funções e triggers) e as correções listadas em [`docs/mapeamento_banco.md`](docs/mapeamento_banco.md), seção 5.
 
 **Autores:** Lucas Ienne, Lucas Silveira, Vinicius de Paula e Gabriel Trevisoli.
 
@@ -32,7 +34,7 @@ Imagens e nomes dos itens © Valve Corporation. Os links das imagens oficiais e 
 | Análise de mercado *(extra)* | `/analise` | Indicadores, gráficos e rankings por período e categoria |
 | Perfil do usuário | `/usuario/:id` | Reputação, avaliações recebidas, anúncios ativos e trocas |
 
-O enunciado pede um de dois temas. O VaultGabe segue o de **buscas complexas de forma simplificada e inserção de dados** (Catálogo, Detalhe, Inventário e Negociações). Os **gráficos** (Análise de mercado e gráfico de preço do Detalhe) são um extra, além do exigido, que cobre parte do outro tema (análise visual e estatística).
+O enunciado pede um de dois temas. O VaultGabe segue o de **buscas complexas de forma simplificada e inserção de dados** (Catálogo, Detalhe, Inventário e Negociações). Os **gráficos** (Análise de mercado e gráfico de preço do Detalhe) são um extra que cobre parte do outro tema (análise visual e estatística).
 
 Não há login: o seletor **"Entrar como"**, no topo, escolhe o usuário de demonstração (padrão: `isizinha`).
 
@@ -48,10 +50,8 @@ vaultgabe_t1/
 │   ├── carregar.mjs   Monta uma branch do Neon com 01 a 04 (npm run banco:dev)
 │   └── consultas/     SQL usado pela aplicação, um arquivo por página
 ├── docs/
-│   ├── enunciado_trabalho1.pdf   Enunciado do projeto
-│   ├── escopo.md                 Telas, funcionalidades e prioridades da aplicação
-│   ├── mapeamento_banco.md       Tabelas, relacionamentos, regras e dados do banco
-│   └── publicacao.md             Como publicar no GitHub e no Render
+│   ├── escopo.md              Telas, funcionalidades e prioridades da aplicação
+│   └── mapeamento_banco.md    Tabelas, regras, dados e correções em relação ao BD I
 ├── public/            Arquivos enviados direto ao navegador
 │   ├── css/estilo.css    Identidade visual
 │   ├── js/               JavaScript de cada página (+ comum.js: topo, janelas, formatação;
@@ -133,4 +133,6 @@ Os dados de demonstração têm datas fixas e os testes de compra usam os anúnc
 
 ## Publicação
 
-O procedimento para enviar o código ao GitHub e publicar no Render está em [`docs/publicacao.md`](docs/publicacao.md).
+O site roda no Render, com a configuração do [`render.yaml`](render.yaml): região Ohio (a mesma do banco), plano gratuito e verificação de saúde em `/api/saude`. A URL da branch `production` do Neon fica na variável `DATABASE_URL`, definida no painel do Render e nunca no repositório. A cada commit na branch `main`, o Render publica a nova versão.
+
+O comando `npm run banco:producao -- --confirmo` apaga e monta de novo a branch `production` com os scripts `01` a `04`. Ele é necessário sempre que esses scripts mudam (as consultas da aplicação dependem das visões e funções de `01` e `02`) e também restaura os dados de demonstração, já que as compras, os anúncios e as avaliações feitos no site publicado ficam gravados na produção.

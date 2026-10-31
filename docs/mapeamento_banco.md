@@ -1,8 +1,8 @@
 # Mapeamento do banco de dados — VaultGabe
 
-Este documento descreve o banco usado pela aplicação: tabelas, chaves, relacionamentos, regras de negócio e os dados de demonstração disponíveis.
+Banco de dados usado pela aplicação: tabelas, regras de negócio, dados de demonstração e as correções feitas sobre o banco desenvolvido em Banco de Dados I.
 
-Os números foram obtidos executando `database/01_tabelas.sql` → `05_verificacao.sql` em um PostgreSQL de teste. A coluna "03" da seção 3 e as tabelas da seção 7 (exceto "Depois da ampliação") descrevem o banco montado só até o `03_dados.sql`; a coluna "03 + 04" é o banco completo, usado pelo site. Todas as contagens e as 25 regras de verificação retornaram `OK`. Também foi conferida a linha do tempo de posse de cada item: nenhum anúncio ou troca usa um item que não pertencia ao participante na data.
+Os números foram obtidos montando o banco com `database/01_tabelas.sql` a `03_dados.sql` (coluna "03", a base herdada de Banco de Dados I) e a `04_dados_ampliados.sql` (coluna "03 + 04", o banco completo, usado pelo site). Nos dois casos, o `05_verificacao.sql` retornou `OK` em todas as contagens e nas 25 regras de verificação.
 
 ---
 
@@ -22,52 +22,11 @@ O banco tem **20 tabelas**, organizadas em sete áreas:
 
 > **Conceito central:** `item_catalogo` é o **modelo** ("AK-47 | Redline"), e `item_instancia` é um **exemplar** daquele modelo, com dono, float e número de inspeção próprios. Um modelo tem vários exemplares.
 
----
-
-## 2. Diagrama
-
-```mermaid
-erDiagram
-    categoria_item ||--o{ item_catalogo : enquadra
-    raridade ||--o{ item_catalogo : classifica
-    colecao |o--|{ item_catalogo : agrupa
-    item_catalogo ||--o{ item_instancia : "é modelo de"
-    usuario ||--o{ item_instancia : possui
-
-    item_instancia ||--o| equipamento : "é um"
-    item_instancia ||--o| cosmetico : "é um"
-    item_instancia ||--o| consumivel : "é um"
-    cosmetico ||--o| aplicacao_cosmetico : "aplicado via"
-    equipamento ||--o{ aplicacao_cosmetico : recebe
-
-    usuario ||--o{ anuncio : cria
-    item_instancia ||--o{ anuncio : "oferecido em"
-    anuncio ||--o| venda : gera
-    usuario ||--o{ venda : compra
-    venda ||--|| pagamento : registra
-    venda ||--o| nota_fiscal : emite
-
-    usuario ||--o{ troca : "propõe"
-    usuario ||--o{ troca : "é destinatário"
-    troca ||--|{ troca_item : envolve
-    item_instancia ||--o{ troca_item : "participa de"
-
-    usuario ||--o{ avaliacao : escreve
-    usuario ||--o{ avaliacao : recebe
-    avaliacao ||--o| avaliacao_venda : "é de"
-    avaliacao ||--o| avaliacao_troca : "é de"
-    venda ||--o{ avaliacao_venda : "avaliada em"
-    troca ||--o{ avaliacao_troca : "avaliada em"
-
-    usuario ||--o{ abertura_recipiente : abre
-    consumivel ||--o| abertura_recipiente : "é recipiente de"
-    consumivel |o--o| abertura_recipiente : "é chave de"
-    item_instancia ||--o| abertura_recipiente : "é resultado de"
-```
+As tabelas usadas por cada página estão em [`escopo.md`](escopo.md), seção 5.
 
 ---
 
-## 3. Tabelas
+## 2. Tabelas
 
 **Política de chaves:** toda tabela de entidade tem `id SERIAL` como chave primária, e a chave "natural" do negócio (nome, Steam ID, protocolo...) é mantida como `UNIQUE`. Os subtipos usam a mesma chave do registro pai.
 
@@ -110,57 +69,13 @@ erDiagram
 | `avaliacao` | `nota` de 1 a 5; autor ≠ avaliado |
 | `abertura_recipiente` | recipiente, chave e resultado são itens diferentes |
 
----
-
-## 4. Relacionamentos e cardinalidades
-
-| Relacionamento | Entre | Cardinalidade | Como é implementado |
-|---|---|---|---|
-| Enquadra | modelo → categoria | cada modelo tem 1 categoria | FK `NOT NULL` |
-| Classifica | modelo → raridade | cada modelo tem 1 raridade | FK `NOT NULL` |
-| Pertence | modelo → coleção | cada modelo tem 0 ou 1 coleção; cada coleção tem ≥ 1 modelo | FK opcional + regra RS-18 |
-| Modelo de | exemplar → modelo | cada exemplar é de 1 modelo | FK `NOT NULL` |
-| Possui | exemplar → usuário | cada exemplar tem 1 dono **atual** | FK `NOT NULL` (muda quando vende ou troca) |
-| Especialização | exemplar → equipamento \| cosmético \| consumível | exatamente 1 subtipo (total e disjunta) | chave compartilhada + RS-01, RS-02 |
-| Aplica | cosmético → equipamento | 1 cosmético em ≤ 1 equipamento; equipamento com ≤ 6 cosméticos | PK + triggers (ver 6.1) |
-| Cria | anúncio → usuário | cada anúncio tem 1 criador | FK `NOT NULL` |
-| Oferece | anúncio → exemplar | um exemplar pode ter vários anúncios ao longo do tempo, mas só 1 aberto | FK `NOT NULL` + índice único parcial |
-| Gera | venda → anúncio | 1 anúncio gera no máximo 1 venda | FK `NOT NULL` + `UNIQUE` |
-| Compra | venda → usuário | cada venda tem 1 comprador | FK `NOT NULL` |
-| Registra | pagamento ↔ venda | 1 para 1 | chave compartilhada + RS-06 |
-| Emite | nota fiscal → venda | cada venda tem 0 ou 1 nota | FK `NOT NULL` + `UNIQUE` |
-| Propõe / Destinatário | troca → usuário (×2) | cada troca tem 1 proponente e 1 destinatário | 2 FKs `NOT NULL` |
-| Envolve | troca ↔ exemplar | muitos para muitos, com atributo `lado_troca` | tabela `troca_item` + RS-08 |
-| Escreve / Recebe | avaliação → usuário (×2) | cada avaliação tem 1 autor e 1 avaliado | 2 FKs `NOT NULL` |
-| Avalia venda / troca | avaliação → venda **ou** troca | exatamente um dos dois | subtipos + RS-09 |
-
-> **Cosméticos aplicados:** como no CS2, aplicar um adesivo ou chaveiro o **incorpora à arma**. Ele precisa ser do mesmo dono, passa a `consumido` (deixa de ser negociável sozinho) e acompanha a arma quando ela é vendida ou trocada.
+Os status são gravados sem acento (`disponivel`, `concluida`...), e a interface os exibe com acento. Um anúncio está **aberto** quando o status é `pendente` ou `ativo`, e **encerrado** quando é `vendido`, `expirado` ou `cancelado`.
 
 ---
 
-## 5. Valores de status
+## 3. Regras de negócio
 
-Os valores são gravados **sem acento**. A interface pode exibi-los com acento.
-
-| Coluna | Valores possíveis | Padrão |
-|---|---|---|
-| `item_instancia.status_item` | `disponivel`, `bloqueado`, `consumido` | `disponivel` |
-| `anuncio.status_anuncio` | `pendente`, `ativo`, `vendido`, `expirado`, `cancelado` | **`pendente`** |
-| `venda.status_venda` | `pendente`, `concluida`, `cancelada` | `pendente` |
-| `pagamento.status_pagamento` | `pendente`, `aprovado`, `recusado` | `pendente` |
-| `pagamento.metodo_pagamento` | `pix`, `cartao_credito`, `cartao_debito`, `boleto`, `saldo_steam` | — |
-| `troca.status_troca` | `pendente`, `aceita`, `recusada`, `cancelada`, `concluida` | `pendente` |
-| `troca_item.lado_troca` | `oferecido`, `solicitado` | — |
-| `cosmetico.tipo_cosmetico` | `adesivo`, `chaveiro` | — |
-| `consumivel.tipo_consumivel` | `caixa`, `capsula`, `chave`, `grafite` | — |
-
-Um anúncio está **aberto** quando o status é `pendente` ou `ativo`, e **encerrado** quando é `vendido`, `expirado` ou `cancelado`.
-
----
-
-## 6. Regras de negócio
-
-### 6.1 Garantidas pelo banco (triggers em `02_regras.sql`)
+### 3.1 Triggers (`02_regras.sql`)
 
 O banco **recusa** a operação que viola a regra e devolve uma mensagem de erro, que a aplicação pode exibir ao usuário.
 
@@ -177,36 +92,9 @@ O banco **recusa** a operação que viola a regra e devolve uma mensagem de erro
 | — | `trg_registrar_abertura_recipiente` | `abertura_recipiente` | antes de INSERT | Valida recipiente e chave (sem anúncio aberto) e o resultado; marca recipiente e chave como `consumido` |
 | — | `trg_proteger_abertura_recipiente` | `abertura_recipiente` | antes de UPDATE/DELETE | Impede alterar ou apagar o histórico de aberturas |
 
-Além dos triggers, o índice `anuncio_aberto_por_item_uk` impede **dois anúncios abertos para o mesmo item**.
+Além dos triggers, o índice `anuncio_aberto_por_item_uk` impede **dois anúncios abertos para o mesmo item**. O `05_verificacao.sql` confere ainda 25 regras sobre os dados (RS-01 a RS-25), como "todo exemplar está em exatamente um subtipo" e "pagamento e nota fiscal com o mesmo valor da venda"; várias delas também são garantidas pelos triggers acima.
 
-### 6.2 Conferidas por `05_verificacao.sql`
-
-| Regra | Descrição | Também bloqueada na inserção? |
-|---|---|---|
-| RS-01, RS-02 | Todo exemplar está em exatamente 1 subtipo | Não |
-| RS-03 | Equipamento com no máximo 6 cosméticos | **Sim** (trigger 1) |
-| RS-04 | Venda concluída ⇒ item com o comprador (se não mudou de dono depois) | Não |
-| RS-05 | Comprador nunca é o criador do anúncio | **Sim** (trigger 2) |
-| RS-06 | Toda venda tem 1 pagamento | Não |
-| RS-07 | Troca concluída ⇒ oferecidos com o destinatário e solicitados com o proponente (se não mudaram de dono depois) | Não |
-| RS-08 | Toda troca tem ≥ 1 item oferecido e ≥ 1 solicitado | Não |
-| RS-09 | Toda avaliação é de uma venda **ou** de uma troca | Em parte: os triggers 7 e 8 impedem as duas ao mesmo tempo, e `fn_avaliar_venda` já cria a avaliação no subtipo |
-| RS-10 | Anúncio `vendido` ⇔ existe venda `concluida` | **Sim**, ao mudar o status (trigger 6) |
-| RS-11 | Float do exemplar dentro da faixa do modelo | Não |
-| RS-12, RS-13 | Nota fiscal e pagamento com o mesmo valor da venda | Não |
-| RS-14 | Exemplares do mesmo modelo caem no mesmo subtipo | Não |
-| RS-15 | Faixa de float só em modelos de equipamento | Não |
-| RS-16 | Pagamento recusado ⇒ venda cancelada | Não |
-| RS-17 | Anúncio ativo ⇒ criador é o dono atual do item | **Sim** (trigger 5) |
-| RS-18 | Toda coleção tem ≥ 1 modelo | Não |
-| RS-19 a RS-22 | Aberturas válidas e recipientes consumidos | **Sim** (trigger de abertura) |
-| RS-23 | Cosmético aplicado: mesmo dono da arma, consumido e não negociável | **Sim** (triggers 3 e 4) |
-| RS-24 | Anúncio aberto ⇒ item disponível e negociável | **Sim** (trigger 5; a abertura e a aplicação de cosmético também recusam item com anúncio aberto) |
-| RS-25 | Avaliação entre as partes de uma operação concluída, depois dela, uma por autor | **Sim** (triggers 7 e 8) |
-
-Uma compra feita por `fn_comprar_anuncio` (seção 6.3) já cumpre RS-04, RS-06, RS-10, RS-12 e RS-13 por construção.
-
-### 6.3 Funções chamadas pela aplicação
+### 3.2 Funções, índices e visões
 
 Operações de várias etapas ficam no próprio banco. Cada chamada é atômica: se uma etapa falhar, nada é gravado. Todos os triggers continuam valendo para o que a função grava.
 
@@ -226,64 +114,9 @@ Operações de várias etapas ficam no próprio banco. Cada chamada é atômica:
 
 ---
 
-## 7. Dados disponíveis
+## 4. Dados de demonstração
 
-As tabelas desta seção descrevem os dados de `03_dados.sql` (a base herdada de Banco de Dados I, usada também pelos testes). O `04_dados_ampliados.sql` acrescenta o volume usado pelas telas e pelos gráficos (ver "Depois da ampliação", no fim da seção).
-
-### Usuários
-
-| id | Apelido | Nome | Itens | Negociáveis | Anúncios ativos | Compras | Vendas | Nota média |
-|---:|---|---|---:|---:|---:|---:|---:|---:|
-| 1 | galabinha | Ana Ribeiro | 3 | 1 | 0 | 0 | 4 | 4,0 |
-| 2 | viniciuslabubu | Bruno Carvalho | 7 | 5 | 1 | 0 | 0 | 5,0 |
-| 3 | manojoe | Carla Menezes | 3 | 2 | 0 | 0 | 2 | 3,0 |
-| 4 | dfontes | Diego Fontes | 7 | 6 | 1 | 2 | 0 | — |
-| 5 | lisa | Elisa Moraes | 3 | 2 | 0 | 0 | 2 | — |
-| 6 | pepaa | Felipe Andrade | 3 | 3 | 1 | 0 | 0 | 4,0 |
-| 7 | gabs | Gabriela Souza | 1 | 1 | 0 | 0 | 2 | — |
-| 8 | rick | Henrique Lopes | 3 | 2 | 0 | 0 | 0 | — |
-| 9 | isizinha | Isabela Prado | 11 | 7 | 0 | 4 | 0 | 4,5 |
-| 10 | JV | João Vitor Nunes | 2 | 2 | 1 | 0 | 0 | — |
-| 11 | lari | Larissa Teixeira | 6 | 5 | 2 | 3 | 0 | 5,0 |
-| 12 | bruninmatador | Marcelo Dias | 5 | 4 | 0 | 1 | 0 | 4,0 |
-
-*"Itens" inclui os cosméticos aplicados nas armas do usuário. "Negociáveis" = itens `disponivel` com `tradable_flag = true`, inclusive os que já têm anúncio aberto (o Inventário mostra à parte os "Prontos para anunciar").*
-
-### Itens
-
-| Tipo | Disponíveis e negociáveis | Bloqueados | Consumidos | Total |
-|---|---:|---:|---:|---:|
-| Equipamento | 15 | 1 | 0 | 16 |
-| Cosmético | 13 | 0 | 7 (aplicados em armas) | 20 |
-| Consumível | 12 | 0 | 6 (caixas, chaves e cápsulas abertas) | 18 |
-| **Total** | **40** | **1** | **13** | **54** |
-
-São **21 modelos** em 13 categorias, todos itens reais do CS2 com a imagem oficial. As categorias com mais modelos são Rifle e Luva, com 3 cada.
-
-### Mercado
-
-| | Quantidade | Detalhe |
-|---|---:|---|
-| Anúncios ativos | 6 | de R$ 35,00 (P90) a R$ 10.500,00 (M4A4 \| Howl) |
-| Anúncios vendidos | 10 | |
-| Anúncios cancelados / expirados | 2 / 1 | |
-| Vendas concluídas | 10 | R$ 19.967,40 no total, entre 06/01/2026 e 02/02/2026 |
-| Vendas pendente / cancelada | 1 / 1 | a pendente (`VND-2026-0011`, boleto) fica em aberto de propósito, para mostrar a venda pendente e a oferta reservada |
-| Trocas | 10 | 5 concluídas, 2 pendentes, 1 aceita, 1 recusada, 1 cancelada; as 2 pendentes e a aceita ficam abertas de propósito, para mostrar todos os status |
-| Avaliações | 10 | notas de 2 a 5 |
-
-**Anúncios ativos no 03:**
-
-| Item | Vendedor | Preço | Expira em |
-|---|---|---:|---|
-| M4A4 \| Howl *(com 1 adesivo aplicado)* | lari | R$ 10.500,00 | 10/04/2027 |
-| Karambit \| Doppler | lari | R$ 5.900,00 | 11/04/2027 |
-| Desert Eagle \| Blaze | JV | R$ 1.950,00 | 12/04/2027 |
-| AWP \| Asiimov | dfontes | R$ 1.100,00 | 01/04/2027 |
-| Cápsula Ambush *(com venda pendente: aparece como reservada e não entra no menor preço; no 04 vira Cápsula Katowice 2014 Challengers, a R$ 6,80)* | viniciuslabubu | R$ 680,00 | 30/04/2027 |
-| P90 \| Sand Spray | pepaa | R$ 35,00 | 02/04/2027 |
-
-### Depois da ampliação (`04_dados_ampliados.sql`)
+O `03_dados.sql` traz a base herdada de Banco de Dados I, usada também pelos testes. O `04_dados_ampliados.sql` acrescenta o volume usado pelas telas e pelos gráficos.
 
 | | 03 | 03 + 04 |
 |---|---:|---:|
@@ -292,28 +125,26 @@ São **21 modelos** em 13 categorias, todos itens reais do CS2 com a imagem ofic
 | Exemplares (`item_instancia`) | 54 | **297** (192 equipamentos, 56 cosméticos, 49 consumíveis) |
 | Vendas concluídas | 10 | **394**, de novembro/2025 a outubro/2026, com vendas em todos os 12 meses |
 | Avaliações | 10 | 158 |
-| Anúncios ativos | 6 | **80**, todos vencendo em 2027 |
+| Anúncios ativos | 6 | **80**, vencendo entre abril e setembro de 2027 |
 | Anúncios cancelados / expirados | 2 / 1 | 15 / 9 |
 
 - **Todos os 80 modelos têm 3 ou mais vendas**, o que garante dados para o gráfico de preço do Detalhe e para os rankings da Análise.
-- **Os preços são simulados** (preço de referência do modelo × desgaste × StatTrak ou Souvenir × tendência mensal × variação de ±7%), e a interface avisa isso.
-- **Steam Guard pesa na reputação:** a Steam segura por até 15 dias os itens enviados por contas sem o autenticador móvel, o que atrasa a entrega das vendas. Por isso os vendedores com `steam_guard_ativo = FALSE` (dfontes, pepaa, isizinha e bruninmatador) recebem notas de 2 a 4, com comentários sobre a demora na entrega, escritos mais de 15 dias depois da venda (quando o item chega); quem compra deles também só anuncia o item depois desse prazo. Na nota média do perfil, esses quatro ficam entre 3,1 e 3,8, e os demais entre 4,0 e 4,5. O site mostra o aviso no perfil, ao lado do vendedor nas ofertas e na janela Comprar. A retenção é simulada só nas vendas do 04: as trocas herdadas do BD I foram efetivadas no dia seguinte à proposta, e a compra feita pelo site entrega o item na hora (a janela de compra avisa).
-- O script é **determinístico**: os "sorteios" usam `md5` de um texto fixo, e não `random()`. Rodar de novo gera os mesmos dados.
-- A linha do tempo de posse continua coerente: cada anúncio é publicado por quem era dono do item naquela data, e as revendas vêm depois da compra anterior. O `05_verificacao.sql` retorna `OK` em todas as contagens e regras.
-- A numeração segue a ordem de cadastro: as vendas do 03 (jan–fev/2026) mantêm `VND-2026-0001` a `0012`, e as do 04 continuam de `0013`, inclusive as de nov–dez/2025 (`VND-2025-0013` em diante; o mesmo vale para os tickets e para o número da nota fiscal).
+- **Os preços são simulados** (preço de referência do modelo × desgaste × StatTrak ou Souvenir × tendência mensal × variação de ±7%), e a interface avisa isso. O script é determinístico: os "sorteios" usam `md5` de um texto fixo, e não `random()`, então rodar de novo gera os mesmos dados.
+- **Steam Guard pesa na reputação:** a Steam segura por até 15 dias os itens enviados por contas sem o autenticador móvel. Por isso os vendedores com `steam_guard_ativo = FALSE` (dfontes, pepaa, isizinha e bruninmatador) recebem notas de 2 a 4, com comentários sobre a demora na entrega, escritos mais de 15 dias depois da venda; quem compra deles só anuncia o item depois desse prazo. Na nota média, esses quatro ficam entre 3,1 e 3,8, e os demais entre 4,0 e 4,5. O site mostra o aviso no perfil, ao lado do vendedor nas ofertas e na janela Comprar. A retenção é simulada só nas vendas do 04; a compra feita pelo site entrega o item na hora.
+- **Linha do tempo de posse coerente:** cada anúncio e cada troca usam um item que pertencia ao participante naquela data, e as revendas vêm depois da compra anterior.
+- **Status em aberto de propósito:** a venda `VND-2026-0011` (boleto) fica pendente, para mostrar a oferta reservada, e 3 trocas ficam abertas (2 pendentes e 1 aceita), para mostrar todos os status.
+- **Numeração:** segue a ordem de cadastro. As vendas do 03 (jan–fev/2026) mantêm `VND-2026-0001` a `0012`, e as do 04 continuam de `0013`, inclusive as de nov–dez/2025 (`VND-2025-0013` em diante; o mesmo vale para os tickets e para o número da nota fiscal).
 
-**Usuários indicados para demonstração** (banco completo, usado pelo site):
+**Usuários indicados para demonstração:**
 - Isabela (`isizinha`): usuária padrão e maior compradora (41 compras), com a AK-47 \| Redline com 3 adesivos aplicados.
 - Diego (`dfontes`): vendedor sem Steam Guard (aviso no perfil, nas ofertas e na janela Comprar), com 6 anúncios ativos.
 - Larissa (`lari`): revendedora, com 9 anúncios ativos, entre eles a M4A4 \| Howl e a Karambit \| Doppler.
 
-As tabelas usadas por cada página estão em [`escopo.md`](escopo.md), seção 5.
-
 ---
 
-## 8. Correções em relação ao BD I
+## 5. Correções em relação ao BD I
 
-As correções abaixo foram feitas sobre o banco do BD I: as regras ficam em `01_tabelas.sql` e `02_regras.sql`, e os dados em `03_dados.sql` e na seção 11 do `04_dados_ampliados.sql`.
+As correções abaixo foram feitas sobre o banco do BD I: as regras ficam em `01_tabelas.sql` e `02_regras.sql`, e os dados em `03_dados.sql` e na seção 11 do `04_dados_ampliados.sql`. Os números de trigger se referem à tabela da seção 3.1, e as regras RS são as do `05_verificacao.sql`.
 
 | Problema | Correção |
 |---|---|
@@ -322,7 +153,7 @@ As correções abaixo foram feitas sobre o banco do BD I: as regras ficam em `01
 | **Cosméticos aplicados** tinham dono diferente da arma (6 de 7) e continuavam negociáveis; havia chaveiro em faca | Triggers 3 e 4 + regra RS-23; as 7 aplicações agora usam cosméticos do próprio dono da arma e só armas de fogo |
 | **Três trocas** usavam itens que já eram de outra pessoa na data da proposta (`TRC-2026-0006`, `0009` e `0010`) | Itens e participantes ajustados em `03_dados.sql` |
 | A troca aceita `TRC-2026-0008` oferecia uma faca **bloqueada** e pedia uma cápsula que já estava em **venda pendente** | Trocada por Nova ↔ AK-47 (ambas Classified) |
-| RS-04 e RS-07 acusariam erro em qualquer **revenda** feita pela aplicação | Passaram a considerar só a transferência mais recente do item |
+| As regras RS-04 (item da venda concluída com o comprador) e RS-07 (itens da troca concluída com a outra parte) acusariam erro em qualquer **revenda** feita pela aplicação | Passaram a considerar só a transferência mais recente do item |
 | Anúncio novo nascia `pendente` e não havia regra para as mudanças de status | A aplicação publica direto como `ativo`; o trigger 6 controla o ciclo de vida |
 | Venda concluída não transferia o item, e a compra exigia vários comandos separados | Função `fn_comprar_anuncio`, atômica |
 | Anúncio vencido continuava `ativo` | Função `fn_expirar_anuncios`, chamada pela aplicação antes de listar |
@@ -341,8 +172,11 @@ As correções abaixo foram feitas sobre o banco do BD I: as regras ficam em `01
 | Laudos de duas trocas não batiam com os itens (`TRC-2026-0003` e `0004`) | Textos corrigidos no `03_dados.sql` |
 | Detalhes dos usuários e dos itens | Apelidos de 4 usuários, datas de cadastro variadas, chaveiro aplicado sem nível de raspagem (chaveiro não raspa) e comentário da `TKT-2026-0003` falando do item, e não de troca (é a avaliação de uma venda) |
 | Os scripts são ASCII, então nomes, comentários e descrições apareciam sem acento na tela ("Capsula", "negociacao") | A seção 11.5 do 04 grava os acentos com escape Unicode (`U&'\00E1'`), sem deixar de ser ASCII; a busca do catálogo usa `fn_sem_acento` e encontra "capsula" ou "cápsula" |
+| Poucos dados para estatísticas (no máximo 1 venda por modelo, e 11 dos 21 modelos sem nenhuma) e anúncios de demonstração vencendo em dezembro/2026 | `04_dados_ampliados.sql`, com 394 vendas em 12 meses (ver a seção 4 deste documento); os 6 anúncios ativos do 03 passaram a vencer em abril/2027 |
 
-### Ajustes da aplicação e da hospedagem
+---
+
+## 6. Ajustes da aplicação e da hospedagem
 
 Ajustes feitos durante o desenvolvimento da aplicação, sem relação com o BD I:
 
@@ -351,16 +185,5 @@ Ajustes feitos durante o desenvolvimento da aplicação, sem relação com o BD 
 | O Neon usa o fuso UTC, e as datas gravadas com `now()` ficariam 3 horas adiantadas | Banco configurado com `timezone = America/Sao_Paulo` nas duas branches |
 | O driver do Node convertia `DATE` e `TIMESTAMP` para o fuso do servidor, e as datas apareciam deslocadas | `src/banco.js` recebe datas como texto, já no horário de São Paulo |
 | Protocolo e ticket usavam `lpad(numero, 4)`: a partir da venda 10.000 o número era cortado e repetia protocolos | O número tem pelo menos 4 dígitos e cresce depois de 9999 (`fn_comprar_anuncio` e `fn_avaliar_venda`) |
-| Duas avaliações da mesma compra enviadas ao mesmo tempo passavam as duas; um anúncio publicado durante a compra do anúncio anterior do mesmo item via o dono antigo | `fn_avaliar_venda` trava a venda e o trigger 5 e `fn_comprar_anuncio` travam o item (`FOR UPDATE`) |
+| Duas avaliações da mesma compra enviadas ao mesmo tempo passavam as duas; um anúncio publicado durante a compra do anúncio anterior do mesmo item via o dono antigo | `fn_avaliar_venda` trava a venda; o trigger 5 e `fn_comprar_anuncio` travam o item (`FOR UPDATE`) |
 | O ranking "Vendedores mais bem avaliados" misturava notas de compras e de trocas | Passou a usar só as notas recebidas nas vendas (`vendedores_mais_bem_avaliados`) |
-
----
-
-## 9. Limitações tratadas
-
-Duas limitações identificadas nos dados de demonstração foram tratadas:
-
-| # | Limitação | Solução |
-|---:|---|---|
-| 1 | Poucos dados para estatísticas (1 venda por modelo) | `04_dados_ampliados.sql`: 394 vendas simuladas em 12 meses; todo modelo tem 3 ou mais vendas |
-| 2 | Anúncios de demonstração vencendo em dezembro/2026 | Os 6 do 03 passaram a vencer em abril/2027, e os do 04 vencem entre abril e setembro de 2027 |

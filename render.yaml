@@ -1,7 +1,7 @@
 # Configuracao do VaultGabe no Render (Blueprint).
 # No Render: New > Blueprint > escolher este repositorio. O Render cria o
 # servico web e so pede o valor de DATABASE_URL (connection string da branch
-# "production" do Neon). Instrucoes em docs/publicacao.md.
+# "production" do Neon).
 services:
   - type: web
     name: vaultgabe

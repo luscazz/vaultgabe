@@ -22,7 +22,7 @@ O banco fica no [Neon](https://neon.tech), no projeto `vaultgabe_t1` (região AW
 | `production` | Banco do site publicado (Render) | `DATABASE_URL_PRODUCAO` |
 | `development` | Desenvolvimento e testes no computador | `DATABASE_URL` |
 
-- As duas estão configuradas com `timezone = America/Sao_Paulo`. A `development` já está montada com `01` a `04`; a `production` deve ser montada com `npm run banco:producao -- --confirmo` antes de publicar o site (ver [`docs/publicacao.md`](../docs/publicacao.md)).
+- As duas estão configuradas com `timezone = America/Sao_Paulo` e montadas com `01` a `04`: a `development` com `npm run banco:dev` e a `production`, usada pelo site, com `npm run banco:producao -- --confirmo` (ver [`README.md`](../README.md), seção Publicação).
 - Numa branch ou banco novo, configure o fuso uma vez antes de montar: `ALTER DATABASE <nome_do_banco> SET timezone = 'America/Sao_Paulo';` (no Neon, o banco padrão é `neondb`; vale para as conexões abertas depois).
 - **Testes que gravam dados** (compras, anúncios, avaliações) rodam **só na `development`**. Para restaurar os dados de demonstração, execute novamente 01 a 04 nessa branch (o `npm run test:neon` já faz isso ao final).
 - As connection strings ficam **apenas** no `.env`, que não vai para o GitHub (ver `.env.example`).

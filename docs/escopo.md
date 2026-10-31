@@ -1,6 +1,6 @@
 # Escopo da aplicação — VaultGabe
 
-Descreve **o que** a aplicação faz: telas, funcionalidades, navegação, operações no banco e prioridades. A aplicação tem 6 páginas e 3 janelas, todas ligadas ao banco.
+Telas, funcionalidades, operações no banco e prioridades da aplicação.
 
 ---
 
@@ -14,7 +14,9 @@ O usuário escolhe um perfil de demonstração e, a partir dele:
 - **gerencia o inventário** e vê o que pode ser anunciado;
 - **publica e cancela anúncios** e **compra** itens, com o pagamento simulado.
 
-As regras de negócio (só anunciar item próprio e disponível, não comprar o próprio item, um anúncio aberto por item...) são garantidas **pelo próprio banco**, com triggers e restrições. Como extra, além do exigido pelo enunciado, a aplicação oferece uma **análise de mercado** com indicadores e gráficos.
+As regras de negócio (só anunciar item próprio e disponível, não comprar o próprio item, um anúncio aberto por item...) são garantidas **pelo próprio banco**, com triggers e restrições.
+
+Os dados de demonstração têm 80 modelos reais do CS2, com as imagens oficiais, e 394 vendas simuladas distribuídas em 12 meses.
 
 **Tema escolhido** (o enunciado pede um dos dois): *"Permitir ao usuário realizar buscas complexas de forma simplificada e inserir dados"*, com Node.js. Os gráficos (página Análise de mercado e gráfico de preço do Detalhe) são um extra que cobre parte do outro tema, o de análise visual e estatística.
 
@@ -28,24 +30,13 @@ As regras de negócio (só anunciar item próprio e disponível, não comprar o 
 | Buscas complexas de forma simplificada | Filtros combináveis em formulário, em vez de SQL |
 | Inserir dados | Publicar anúncio (INSERT), cancelar anúncio (UPDATE), comprar (INSERT de venda, pagamento e nota fiscal + UPDATE do anúncio e do dono do item) e avaliar o vendedor (INSERT de avaliação) |
 | Hospedada em servidor | Render (aplicação) + Neon (banco) |
-| Um dos dois temas | Buscas complexas de forma simplificada e inserção de dados. A análise visual com gráficos é um extra, além do exigido |
+| Um dos dois temas | Buscas complexas de forma simplificada e inserção de dados. A análise visual com gráficos é um extra |
 
 ---
 
-## 2. Telas e navegação
+## 2. Telas
 
-São **6 páginas** (cada uma com seu endereço) e **3 janelas** (abrem sobre uma página, sem tirar o usuário dela).
-
-```
-  Topo:  VAULTGABE | Catalogo | Inventario | Negociacoes | Analise | [Entrar como: isizinha v]
-                                                                      +-- Meu perfil
-
-  Catalogo --> Detalhe da skin --[Comprar]--> (janela Comprar) --> Inventario
-                     |
-                     +--[vendedor]--> Perfil do usuario
-  Inventario --[Anunciar]--> (janela Novo anuncio) --> Negociacoes
-  Negociacoes > Comprados --[Avaliar]--> (janela Avaliar vendedor)
-```
+São **6 páginas** (cada uma com seu endereço) e **3 janelas** (abrem sobre uma página, sem tirar o usuário dela). O menu do topo leva ao Catálogo, ao Inventário, às Negociações e à Análise; o seletor "Entrar como" tem o link "Meu perfil". No Catálogo, cada skin abre o Detalhe, onde é feita a compra e de onde se chega ao perfil do vendedor.
 
 ### Páginas
 
@@ -66,24 +57,6 @@ São **6 páginas** (cada uma com seu endereço) e **3 janelas** (abrem sobre um
 | B | Comprar | Detalhe da skin | Comprar uma oferta com pagamento simulado | **Essencial** |
 | C | Avaliar vendedor | Negociações › Comprados | Dar nota e comentário depois da compra | Complementar |
 
-### Justificativa da quantidade de telas
-
-- **As 4 páginas essenciais cobrem o ciclo inteiro do marketplace:** encontrar (Catálogo) → comparar (Detalhe) → comprar (janela) → ter (Inventário) → vender e acompanhar (janela + Negociações).
-- **O Perfil sustenta a reputação** mostrada no Detalhe e na janela Comprar.
-- **Ações curtas ficam em janelas** (anunciar, comprar, avaliar), para o usuário não perder o contexto.
-- **As 20 tabelas do banco aparecem em pelo menos uma tela** (ver seção 5).
-
-### Considerado e descartado
-
-| Ideia | Motivo da exclusão |
-|---|---|
-| Página inicial separada | O Catálogo já é a porta de entrada; outra página apenas repetiria conteúdo |
-| Página só de ofertas | Os filtros de oferta (desgaste, StatTrak, adesivos) ficam no próprio Catálogo |
-| Página para cada exemplar | O Detalhe já mostra float, adesivos e vendedor de cada oferta |
-| Login e cadastro | O banco não tem senha; o seletor "Entrar como" substitui o login |
-| Criar trocas ou abrir caixas | Fora do escopo; aparecem só como consulta (Perfil e Inventário) |
-| Painel de administrador | O banco não tem papel de administrador |
-
 ---
 
 ## 3. Elementos comuns a todas as telas
@@ -95,39 +68,15 @@ São **6 páginas** (cada uma com seu endereço) e **3 janelas** (abrem sobre um
 - **Desgaste calculado a partir do float:** Factory New (< 0,07), Minimal Wear (< 0,15), Field-Tested (< 0,38), Well-Worn (< 0,45), Battle-Scarred (≥ 0,45).
 - **Erros do banco viram mensagem para o usuário.** Por exemplo: "Você não é dono deste item" ou "Este item já tem um anúncio aberto".
 - **Estados de tela:** carregando; lista vazia com orientação (ex.: "Nenhuma skin encontrada. Tente outra busca ou limpe os filtros."); erro de conexão com o banco.
-- **Rodapé:** aviso de que usuários, preços e vendas são dados de demonstração, créditos das imagens (Valve) e do CSGO-API, e a identificação do projeto acadêmico.
+- **Rodapé:** aviso de que usuários, preços, vendas e avaliações são dados de demonstração, créditos das imagens (Valve) e do CSGO-API, e a identificação do projeto acadêmico.
 
 ---
 
 ## 4. Telas em detalhe
 
-Os esboços mostram a organização de cada tela; os valores neles são ilustrativos.
-
 ### 4.1 Catálogo — `/` (essencial)
 
 **Objetivo:** encontrar uma skin rapidamente e ver por quanto ela está à venda.
-
-```
-+--------------------------------------------------------------------+
-| [ Buscar skin...                          ]  Ordenar: [Menor preco v]|
-+------------------+-------------------------------------------------+
-| FILTROS          |  +----------+  +----------+  +----------+        |
-| Categoria        |  | [imagem] |  | [imagem] |  | [imagem] |        |
-|  [ ] Rifle       |  | AK-47 |  |  | AWP |    |  | Karambit |        |
-|  [ ] Faca  ...   |  | Redline  |  | Asiimov  |  | Doppler  |        |
-| Raridade         |  | Classif. |  | Covert   |  | Covert   |        |
-|  [ ] Covert ...  |  | a partir |  | a partir |  | a partir |        |
-| Colecao   [   v] |  | R$ 850   |  | R$ 1.100 |  | R$ 5.900 |        |
-| Preco R$ [ ]-[ ] |  | 2 ofertas|  | 1 oferta |  | 1 oferta |        |
-| [x] So a venda   |  +----------+  +----------+  +----------+        |
-| OFERTA           |                                                 |
-| Desgaste  [   v] |                                                 |
-| [ ] StatTrak     |                                                 |
-| [ ] Souvenir     |                                                 |
-| [ ] Com adesivos |                                                 |
-| [Limpar filtros] |                                                 |
-+------------------+-------------------------------------------------+
-```
 
 - **Busca:** por nome (parcial, sem diferenciar maiúsculas nem acentos).
 - **Filtros do modelo:** categoria (várias), raridade (várias), coleção, faixa de preço, "só com anúncio ativo".
@@ -143,21 +92,6 @@ Os esboços mostram a organização de cada tela; os valores neles são ilustrat
 
 **Objetivo:** decidir a compra comparando ofertas, preço histórico e reputação do vendedor.
 
-```
-+--------------------------------------------------------------------+
-| [imagem grande]  AK-47 | Redline                     Classified    |
-|                  Rifle - The Phoenix Collection - float 0,10 a 0,70|
-|                  Menor preco R$ 850 | Media vendida R$ 850 | 1 venda|
-+--------------------------------------------------------------------+
-| ANUNCIOS ATIVOS        Desgaste [Todos v] [ ]StatTrak  Ordenar [v] |
-| Float    Desgaste       Extras           Vendedor (nota)  Preco     |
-| 0,1523   Field-Tested   StatTrak, 3 ades. isizinha (4,5) R$ 850 [Comprar]|
-+--------------------------------------------------------------------+
-| HISTORICO DE VENDAS                     [grafico de preco x tempo] |
-| 06/01/2026   R$ 850,00   float 0,1523   galabinha -> isizinha      |
-+--------------------------------------------------------------------+
-```
-
 - **Cabeçalho:** imagem, nome, raridade, categoria, coleção, faixa de float, descrição; indicadores de menor preço ativo, preço médio vendido (todas as versões do modelo), número de vendas e ofertas à venda. O menor preço e as ofertas à venda não contam as reservadas.
 - **Anúncios ativos:** float, desgaste, StatTrak/Souvenir, adesivos e chaveiros aplicados, vendedor com nota média, preço e um selo de **análise de preço** (ex.: "12,0% abaixo da média"). O selo compara com as vendas da mesma versão do item (desgaste, StatTrak e Souvenir) quando ela tem 2 ou mais vendas, senão com todo o modelo, e mostra a base embaixo (ex.: "(Factory New StatTrak™)" ou "(todas as versões)"). Ofertas com venda pendente aparecem como "Reservado", sem o botão Comprar. Filtros por desgaste, StatTrak e adesivos, vindos do Catálogo ou escolhidos aqui; ordenação por preço ou float.
 - **Botão "Comprar"** em cada anúncio. Não aparece nos anúncios do próprio usuário selecionado.
@@ -170,19 +104,8 @@ Os esboços mostram a organização de cada tela; os valores neles são ilustrat
 
 ### 4.3 Comprar — janela sobre o Detalhe (essencial)
 
-```
-+---------------------------------------------+
-| Comprar AK-47 | Redline (Field-Tested)      |
-| Vendedor: isizinha (4,5)     Preco: R$ 850  |
-| Pagamento: ( ) Pix ( ) Cartao de credito    |
-|            ( ) Cartao de debito ( ) Boleto  |
-|            ( ) Saldo Steam                  |
-| Pagamento simulado: aprovado na hora.       |
-|              [Cancelar]  [Confirmar compra] |
-+---------------------------------------------+
-```
-
 - **Resumo da oferta:** versão do item (desgaste, StatTrak™ ou Souvenir) e float, vendedor com nota média e número de avaliações (e um aviso quando ele não tem Steam Guard) e preço.
+- **Pagamento:** Pix, cartão de crédito, cartão de débito, boleto ou saldo Steam, simulado e aprovado na hora.
 - **Ao confirmar:** numa única transação, o banco cria a **venda** (`concluida`, com protocolo novo), o **pagamento** (`aprovado`) e a **nota fiscal**; marca o anúncio como `vendido`; e passa o item ao comprador. Os adesivos aplicados vão junto, pelo trigger `trg_cosmeticos_acompanham_equipamento`.
 - **Resultado:** a janela mostra "Compra concluída", o protocolo da venda (ex.: VND-2026-0397) e a chave da nota fiscal, com links para o Inventário e para Negociações › Comprados.
 - **Bloqueios do banco:** comprar o próprio item, anúncio já vendido ou vencido.
@@ -193,49 +116,17 @@ Os esboços mostram a organização de cada tela; os valores neles são ilustrat
 
 **Objetivo:** ver o que o usuário tem e colocar itens à venda.
 
-```
-+--------------------------------------------------------------------+
-| Inventario de isizinha                    [Ver minhas negociacoes] |
-| Itens 11 | Negociaveis 7 | Anunciados 0 | Prontos para anunciar 7  |
-| [Todos] [Armas e equipamentos] [Adesivos e chaveiros]              |
-| [Caixas e consumiveis]                                             |
-| +----------------+ +----------------+ +----------------+           |
-| | AK-47|Redline  | | Adesivo | Crown| | Chave da Caixa |           |
-| | FT 0,1523 ST   | | (Foil)         | | Phoenix        |           |
-| | 3 adesivos     | | Disponivel     | | Disponivel     |           |
-| | Disponivel     | | [Anunciar]     | | [Anunciar]     |           |
-| | [Anunciar]     | +----------------+ +----------------+           |
-| +----------------+                                                 |
-+--------------------------------------------------------------------+
-```
-
 - **Resumo:** total de itens, negociáveis, anunciados e prontos para anunciar.
-- **Abas por tipo:** Todos, equipamentos, cosméticos e consumíveis (os três subtipos do banco), cada uma com o número de itens. A caixa "Só os que posso anunciar" deixa na lista, e nos números das abas, só os itens que podem ser anunciados. A aba e o filtro ficam no endereço (`?tipo=...&negociaveis=1`), e cada troca pede a lista de novo ao banco.
+- **Abas por tipo:** Todos, equipamentos, cosméticos e consumíveis (os três subtipos do banco), cada uma com o número de itens. A caixa "Só os que posso anunciar" deixa na lista, e nos números das abas, só os itens que podem ser anunciados. A aba e o filtro ficam no endereço (`?tipo=...&negociaveis=1`), e cada mudança pede a lista de novo ao banco.
 - **Cada item:** imagem, nome, raridade, float e desgaste (equipamentos), StatTrak/Souvenir, adesivos aplicados, cargas (consumíveis) e um **status calculado**:
   - **Disponível** → mostra o botão "Anunciar";
   - **Anunciado (R$ X)** → link para o anúncio;
   - **Bloqueado**, **Aplicado em [arma]** ou **Consumido** → sem ação.
-
 - **Origem e uso em aberturas** (complementar): a caixa aberta mostra "Aberta em 20/06/2026 → AK-47 | Redline"; a chave, "Usada em 20/06/2026"; e o item obtido, "Obtido ao abrir Caixa Phoenix".
 
 **Banco:** `item_instancia` + `item_catalogo` + `raridade` + `categoria_item` + `LEFT JOIN` nos três subtipos + `aplicacao_cosmetico` + `anuncio` aberto + `abertura_recipiente`. Um item pode ser anunciado se estiver `disponivel`, for negociável e não tiver anúncio aberto. O tipo e "só os que posso anunciar" são filtrados no SQL (`inventario_usuario`), e `resumo_inventario` traz os indicadores do topo e o número de itens de cada aba, com e sem esse filtro.
 
 ### 4.5 Novo anúncio — janela sobre o Inventário (essencial)
-
-```
-+---------------------------------------------+
-| Anunciar AK-47 | Redline (FT, float 0,1523) |
-| Preco (R$): [ 900,00 ]                      |
-| Validade:   (o) 7 dias ( ) 14 dias ( ) 30 dias |
-| ANALISE DE PRECO                            |
-|  Menor preco atual:      R$ 850,00          |
-|  Media das vendas:       R$ 850,00          |
-|    (1 venda, todas as versoes)              |
-|  Seu preco esta 5,9% acima da media das     |
-|  vendas (todas as versoes).                 |
-|              [Cancelar]  [Publicar anuncio] |
-+---------------------------------------------+
-```
 
 - **Campos:** preço (maior que zero) e validade (7, 14 ou 30 dias).
 - **Análise de preço** (complementar): menor preço entre as outras ofertas do mesmo modelo que podem ser compradas (sem as reservadas), média das vendas e quanto o preço digitado está acima ou abaixo dela. A média é a das vendas da **mesma versão** do item (desgaste, StatTrak e Souvenir) quando ela tem 2 ou mais vendas; senão, a de todo o modelo. A tela indica a base usada (ex.: "Factory New" ou "todas as versões"), e a conta é a mesma do selo das ofertas no Detalhe.
@@ -247,16 +138,6 @@ Os esboços mostram a organização de cada tela; os valores neles são ilustrat
 
 **Objetivo:** acompanhar tudo o que o usuário vendeu, está vendendo e comprou.
 
-```
-+--------------------------------------------------------------------+
-| [A venda (2)] [Vendidos (0)] [Comprados (3)] [Encerrados (0)]      |
-|                                           [+ Anunciar um item]     |
-| Item             Preco       Publicado   Expira      Acao          |
-| M4A4 | Howl      R$ 10.500   10/06/2026  10/04/2027  [Cancelar]    |
-| Karambit|Doppler R$ 5.900    11/06/2026  11/04/2027  [Cancelar]    |
-+--------------------------------------------------------------------+
-```
-
 - **À venda:** anúncios ativos, com o botão cancelar (pede confirmação). Não é permitido cancelar anúncio com venda pendente.
 - **Vendidos:** comprador, data, valor e protocolo da venda.
 - **Comprados:** item, vendedor, data, valor, método de pagamento e chave da nota fiscal, com o botão "Avaliar vendedor" (complementar).
@@ -266,18 +147,9 @@ Os esboços mostram a organização de cada tela; os valores neles são ilustrat
 
 **Banco:** `anuncio` + `item_instancia` + `item_catalogo` + `equipamento` (desgaste e float) + `venda` + `usuario` (comprador); compras: `venda` + `pagamento` + `nota_fiscal` + `anuncio` + `usuario` (vendedor) + `avaliacao`/`avaliacao_venda` (se já avaliou). Cancelar: `UPDATE anuncio SET status_anuncio = 'cancelado'`.
 
-#### Janela: Avaliar vendedor (complementar)
+#### Janela Avaliar vendedor (complementar)
 
-```
-+---------------------------------------------+
-| Avaliar galabinha - compra VND-2026-0001    |
-| Nota: [1] [2] [3] [4] [5]                   |
-| Comentario: [                          ]    |
-|              [Cancelar]  [Enviar avaliacao] |
-+---------------------------------------------+
-```
-
-- Disponível nas compras concluídas que o usuário ainda não avaliou.
+- Nota de 1 a 5 e comentário opcional, disponível nas compras concluídas que o usuário ainda não avaliou.
 - Depois de enviada, a nota passa a contar na reputação do vendedor (Detalhe e Perfil).
 
 **Banco:** função `fn_avaliar_venda`, que grava `avaliacao` + `avaliacao_venda` de uma vez. O trigger `trg_validar_avaliacao_venda` garante uma avaliação por participante em cada venda.
@@ -288,7 +160,7 @@ Os esboços mostram a organização de cada tela; os valores neles são ilustrat
 - **Gráficos:** volume vendido por mês (com o número de vendas), ticket médio por mês, preço médio por raridade e volume por categoria.
 - **Rankings:** skins mais negociadas; maiores variações de preço; vendedores mais bem avaliados.
 - **Filtros:** período e categoria. Os atalhos de período ("Últimos 30 dias", "Últimos 90 dias", "Últimos 12 meses") terminam na última venda concluída quando ela é anterior a hoje, e a página avisa isso; senão, terminam hoje. Como os dados de demonstração têm datas fixas, contar sempre a partir de hoje deixaria esses períodos vazios com o passar das semanas.
-- **Aviso fixo:** "Dados simulados para demonstração. Os preços e as vendas não representam o mercado real de Counter-Strike 2."
+- **Avisos:** um aviso fixo ("Dados simulados para demonstração. Os preços e as vendas não representam o mercado real de Counter-Strike 2.") e, com menos de 30 vendas no filtro, um aviso de amostra pequena.
 
 **Banco:** agregações (`SUM`, `AVG`, `COUNT`, `date_trunc('month', ...)`) sobre `venda` + `anuncio` + `item_instancia` + `item_catalogo` + `raridade` + `categoria_item`; o ranking de vendedores usa `avaliacao` + `avaliacao_venda` + `usuario`. A data da última venda concluída vem em `indicadores_gerais` (`ultima_venda`) e não depende dos filtros.
 
@@ -330,7 +202,7 @@ Com essas operações, **as 20 tabelas do banco são usadas pela aplicação**.
 
 ## 6. Alterações no banco feitas para a aplicação
 
-Estão nos próprios scripts de `database/` e são conferidas pelos testes. Detalhes em [`mapeamento_banco.md`](mapeamento_banco.md), seção 6.
+Estão nos próprios scripts de `database/` e são conferidas pelos testes. Detalhes em [`mapeamento_banco.md`](mapeamento_banco.md), seção 3.
 
 | # | Alteração | Por quê |
 |---:|---|---|
@@ -338,7 +210,7 @@ Estão nos próprios scripts de `database/` e são conferidas pelos testes. Deta
 | 2 | Sequências do protocolo de venda (`VND-AAAA-NNNN`) e do ticket de avaliação (`TKT-AAAA-NNNN`) e geração da chave da nota fiscal (44 dígitos) | Necessário para a compra e a avaliação |
 | 3 | Regra de cancelamento (trigger `trg_transicao_anuncio`): não cancelar anúncio com venda pendente | Evita cancelar um negócio em andamento |
 | 4 | Função `fn_expirar_anuncios()` | Marca como `expirado` os anúncios abertos já vencidos, exceto os que têm venda pendente. A API a executa antes de listar (no máximo uma vez por minuto) |
-| 5 | Regra de avaliação (triggers 7 e 8 + `fn_avaliar_venda`): só quem participou de uma venda concluída avalia, uma vez por venda | Necessário para "Avaliar vendedor" |
+| 5 | Regra de avaliação (triggers `trg_validar_avaliacao_venda` e `trg_validar_avaliacao_troca` + `fn_avaliar_venda`): só quem participou de uma venda concluída avalia, uma vez por venda | Necessário para "Avaliar vendedor" |
 | 6 | `imagem_base` como `TEXT` | Os links das imagens oficiais passam de 255 caracteres (o maior tem 287) |
 | 7 | Índices `idx_venda_data` e `idx_anuncio_ativo_expiracao` | Desempenho do histórico, das estatísticas e da expiração dos anúncios |
 | 8 | Função `fn_media_vendas_comparaveis(item)` | Média da análise de preço: vendas da mesma versão do item (desgaste, StatTrak e Souvenir) quando há 2 ou mais, senão todo o modelo. O Detalhe e o Novo anúncio usam a mesma conta |
@@ -347,41 +219,10 @@ Estão nos próprios scripts de `database/` e são conferidas pelos testes. Deta
 
 ---
 
-## 7. Estatísticas (complementar)
-
-| Estatística | Onde aparece |
-|---|---|
-| Preço médio das vendas concluídas | Detalhe, Novo anúncio, Análise |
-| Menor preço anunciado por skin (sem as ofertas reservadas) | Catálogo, Detalhe, Novo anúncio |
-| Evolução do preço ao longo do tempo | Detalhe (gráfico), Análise |
-| Skins mais negociadas | Análise |
-| Rankings por categoria e raridade | Análise |
-| Preço anunciado × média histórica da mesma versão ou do modelo ("Análise de Preço") | Novo anúncio, anúncios do Detalhe |
-
-> Os gráficos usam o histórico de vendas simuladas de `database/04_dados_ampliados.sql`, espalhado em 12 meses. A página de Análise avisa que os dados são simulados e mostra o tamanho da amostra quando ela é pequena.
-
----
-
-## 8. Prioridades
+## 7. Prioridades
 
 | Nível | O que entra |
 |---|---|
 | **Essencial** (atende o enunciado) | Seletor de usuário · Catálogo com busca, filtros e ordenação · Detalhe da skin · Inventário · Publicar e cancelar anúncio · Negociações (anúncios, vendas e compras) · Compra simulada · Publicação no Render + Neon |
-| **Complementar** (extras, além do exigido pelo enunciado) | Análise de mercado · Análise de preço no anúncio e nas ofertas · Perfil com reputação · Avaliar vendedor após a compra · Origem e uso de aberturas no Inventário |
-| **Fora do escopo** | Login com senha · Pagamento real · Criar trocas (só consulta) · Abrir caixas · Integração com a Steam · Painel de administrador |
-
-
----
-
-## 9. Decisões de projeto
-
-| Aspecto | Solução adotada |
-|---|---|
-| Compra na aplicação | Compra simulada: pagamento aprovado na hora, em uma única transação no banco (`fn_comprar_anuncio`) |
-| Funcionalidades complementares | Todas as da seção 8: Análise de mercado, Análise de preço no anúncio e nas ofertas, Perfil com reputação, Avaliar vendedor após a compra e Origem e uso de aberturas no Inventário |
-| Ampliação dos dados | 80 modelos com imagens reais (CSGO-API), mais exemplares e anúncios, e 394 vendas simuladas distribuídas em 12 meses |
-| Telas | 6 páginas + 3 janelas (ver seção 2) |
-| Publicação do anúncio | Direto como `ativo` (não há administrador para aprovar) |
-| Identificação do usuário | Seletor "Entrar como", sem senha; padrão Isabela (`isizinha`) |
-| Trocas | Somente consulta, no Perfil |
-| Expiração de anúncios | Automática ao consultar (`fn_expirar_anuncios`) |
+| **Complementar** (além do exigido pelo enunciado) | Análise de mercado · Análise de preço no anúncio e nas ofertas · Perfil com reputação · Avaliar vendedor após a compra · Origem e uso de aberturas no Inventário |
+| **Fora do escopo** | Login com senha (o banco não tem senha; o seletor "Entrar como" substitui o login) · Pagamento real · Criar trocas (só consulta, no Perfil) · Abrir caixas (só consulta, no Inventário) · Integração com a Steam · Painel de administrador (o banco não tem esse papel) |
