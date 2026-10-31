@@ -31,7 +31,7 @@ O banco fica no [Neon](https://neon.tech), no projeto `vaultgabe_t1` (região AW
 
 ### Opção 1 — Comando do projeto (recomendado)
 
-Na pasta `vaultgabe_t1`, com o `.env` preenchido:
+Na pasta do projeto, com o `.env` preenchido:
 
 | Comando | O que faz |
 |---|---|

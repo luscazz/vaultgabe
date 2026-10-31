@@ -45,7 +45,7 @@ O escopo detalhado de cada página está em [`docs/escopo.md`](docs/escopo.md).
 ## Estrutura do projeto
 
 ```
-vaultgabe_t1/
+vaultgabe/
 ├── database/          Scripts SQL que montam o banco (ver database/README.md)
 │   ├── carregar.mjs   Monta uma branch do Neon com 01 a 04 (npm run banco:dev)
 │   └── consultas/     SQL usado pela aplicação, um arquivo por página
