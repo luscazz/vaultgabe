@@ -122,17 +122,15 @@ Parâmetros que se repetem aceitam vários valores (`?categoria=1&categoria=2` o
 
 ## Testes
 
-| Comando | Onde roda | Observação |
-|---|---|---|
-| `npm test` | PostgreSQL em memória | Rápido; não requer internet nem acessa nenhum banco real |
-| `npm run test:neon` | Branch `development` do Neon | Inclui os testes da API (todas as rotas, inclusive os erros). No fim, recarrega a branch com os dados de demonstração. **Nunca roda na produção** (exige `DATABASE_URL_PRODUCAO` no `.env` para conferir isso) |
+| Comando | O que faz |
+|---|---|
+| `npm test` | Monta o banco em memória, sem internet, e confere as regras de negócio, as operações (compra, anúncio, cancelamento e avaliação), as 34 consultas e os dados de demonstração |
+| `npm run test:neon` | Os mesmos testes, mais os da API, na branch `development` do Neon, que é recarregada no fim. Não roda na produção |
 
-Os testes montam o banco do zero e conferem as regras de negócio, as operações (compra, anúncio, cancelamento, avaliação), as 34 consultas da aplicação e os dados ampliados (`04_dados_ampliados.sql`).
-
-Os dados de demonstração têm datas fixas e os testes de compra usam os anúncios ativos, que vencem a partir de 01/04/2027. Depois dessa data, esses testes deixam de passar até que as validades em `03_dados.sql` e `04_dados_ampliados.sql` sejam atualizadas.
+Os anúncios de demonstração vencem a partir de 01/04/2027. Depois dessa data, os testes de compra só voltam a passar com validades novas nos dados.
 
 ## Publicação
 
-O site roda no Render, com a configuração do [`render.yaml`](render.yaml): região Ohio (a mesma do banco), plano gratuito e verificação de saúde em `/api/saude`. A URL da branch `production` do Neon fica na variável `DATABASE_URL`, definida no painel do Render e nunca no repositório. A cada commit na branch `main`, o Render publica a nova versão.
+O site roda no Render, configurado pelo [`render.yaml`](render.yaml), com o banco na branch `production` do Neon. A URL do banco fica na variável `DATABASE_URL`, definida no painel do Render (nunca no repositório), e cada commit na branch `main` publica uma nova versão.
 
-O comando `npm run banco:producao -- --confirmo` apaga e monta de novo a branch `production` com os scripts `01` a `04`. Ele é necessário sempre que esses scripts mudam (as consultas da aplicação dependem das visões e funções de `01` e `02`) e também restaura os dados de demonstração, já que as compras, os anúncios e as avaliações feitos no site publicado ficam gravados na produção.
+Para recriar o banco de produção, quando os scripts de `database/` mudam ou para restaurar os dados de demonstração, use `npm run banco:producao -- --confirmo`.
