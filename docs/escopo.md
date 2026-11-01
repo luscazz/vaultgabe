@@ -18,8 +18,6 @@ As regras de negócio (só anunciar item próprio e disponível, não comprar o 
 
 Os dados de demonstração têm 80 modelos reais do CS2, com as imagens oficiais, e 394 vendas simuladas distribuídas em 12 meses.
 
-**Tema escolhido** (o enunciado pede um dos dois): *"Permitir ao usuário realizar buscas complexas de forma simplificada e inserir dados"*, com Node.js. Os gráficos (página Análise de mercado e gráfico de preço do Detalhe) são um extra que cobre parte do outro tema, o de análise visual e estatística.
-
 ### Como cada requisito do enunciado é atendido
 
 | Requisito | Como o VaultGabe atende |
@@ -30,7 +28,7 @@ Os dados de demonstração têm 80 modelos reais do CS2, com as imagens oficiais
 | Buscas complexas de forma simplificada | Filtros combináveis em formulário, em vez de SQL |
 | Inserir dados | Publicar anúncio (INSERT), cancelar anúncio (UPDATE), comprar (INSERT de venda, pagamento e nota fiscal + UPDATE do anúncio e do dono do item) e avaliar o vendedor (INSERT de avaliação) |
 | Hospedada em servidor | Render (aplicação) + Neon (banco) |
-| Um dos dois temas | Buscas complexas de forma simplificada e inserção de dados. A análise visual com gráficos é um extra |
+| Um dos dois temas | Buscas complexas de forma simplificada e inserção de dados. Os gráficos (Análise de mercado e gráfico de preço do Detalhe) são um extra |
 
 ---
 
@@ -81,7 +79,7 @@ São **6 páginas** (cada uma com seu endereço) e **3 janelas** (abrem sobre um
 - **Busca:** por nome (parcial, sem diferenciar maiúsculas nem acentos).
 - **Filtros do modelo:** categoria (várias), raridade (várias), coleção, faixa de preço, "só com anúncio ativo".
 - **Filtros da oferta** (valem para armas, facas e luvas): desgaste, StatTrak, Souvenir e "com adesivos". Mostram só os modelos com pelo menos uma oferta ativa com essas características, e o "a partir de" passa a considerar só essas ofertas.
-- **Ordenação:** menor preço, maior preço, mais ofertas, mais vendidas, nome. (Não há ordenação por raridade: o banco não define uma ordem entre raridades de armas e de adesivos.)
+- **Ordenação:** menor preço, maior preço, mais ofertas, mais vendidas, nome.
 - **Cada card:** imagem, nome, raridade (cor), categoria, menor preço ativo, número de ofertas.
 - **Ofertas reservadas:** um anúncio ativo com venda pendente não pode ser comprado. Ele continua listado no Detalhe, marcado como reservado, mas não entra no menor preço, no número de ofertas nem nos filtros do Catálogo.
 - **Ação:** clicar no card abre o Detalhe **com os mesmos filtros de oferta já aplicados** (ex.: `/skin/12?desgaste=FN&stattrak=1`).
@@ -92,15 +90,15 @@ São **6 páginas** (cada uma com seu endereço) e **3 janelas** (abrem sobre um
 
 **Objetivo:** decidir a compra comparando ofertas, preço histórico e reputação do vendedor.
 
-- **Cabeçalho:** imagem, nome, raridade, categoria, coleção, faixa de float, descrição; indicadores de menor preço ativo, preço médio vendido (todas as versões do modelo), número de vendas e ofertas à venda. O menor preço e as ofertas à venda não contam as reservadas.
-- **Anúncios ativos:** float, desgaste, StatTrak/Souvenir, adesivos e chaveiros aplicados, vendedor com nota média, preço e um selo de **análise de preço** (ex.: "12,0% abaixo da média"). O selo compara com as vendas da mesma versão do item (desgaste, StatTrak e Souvenir) quando ela tem 2 ou mais vendas, senão com todo o modelo, e mostra a base embaixo (ex.: "(Factory New StatTrak™)" ou "(todas as versões)"). Ofertas com venda pendente aparecem como "Reservado", sem o botão Comprar. Filtros por desgaste, StatTrak e adesivos, vindos do Catálogo ou escolhidos aqui; ordenação por preço ou float.
+- **Cabeçalho:** imagem, nome, raridade, categoria, coleção, faixa de float, descrição; indicadores de menor preço ativo, preço médio vendido (todas as versões do modelo), número de vendas e ofertas à venda.
+- **Anúncios ativos:** float, desgaste, StatTrak/Souvenir, adesivos e chaveiros aplicados, vendedor com nota média, preço e um selo de **análise de preço** (ex.: "12,0% abaixo da média"). O selo compara com a média das vendas comparáveis e mostra a base usada. Ofertas com venda pendente aparecem como "Reservado", sem o botão Comprar. Filtros por desgaste, StatTrak e adesivos, vindos do Catálogo ou escolhidos aqui; ordenação por preço ou float.
 - **Botão "Comprar"** em cada anúncio. Não aparece nos anúncios do próprio usuário selecionado.
 - **Histórico de vendas concluídas:** data, preço, float, de quem para quem, mais um gráfico simples de preço ao longo do tempo (extra).
 - **Ações:** comprar; clicar no vendedor abre o Perfil.
 - **Colunas conforme o tipo do item:** armas, facas e luvas mostram float, desgaste, seed, StatTrak/Souvenir e cosméticos aplicados; adesivos e chaveiros mostram o tipo; caixas, cápsulas, chaves e grafites mostram lacrado e cargas. A faixa de float do cabeçalho só aparece para equipamentos.
 - **Sem ofertas:** a página mostra "Nenhuma oferta no momento" e mantém o histórico de vendas.
 
-**Banco:** `anuncio` + `item_instancia` + `equipamento`/`cosmetico`/`consumivel` (conforme o tipo) + `aplicacao_cosmetico` (+ `item_catalogo` dos cosméticos) + `usuario` + média de `avaliacao` do vendedor. O histórico usa `venda` + `anuncio` + `item_instancia` + `usuario` (vendedor e comprador). O desgaste sai de um `CASE` sobre o float. A média de cada oferta vem de `fn_media_vendas_comparaveis` (ver seção 6).
+**Banco:** `anuncio` + `item_instancia` + `equipamento`/`cosmetico`/`consumivel` (conforme o tipo) + `aplicacao_cosmetico` (+ `item_catalogo` dos cosméticos) + `usuario` + média de `avaliacao` do vendedor. O histórico usa `venda` + `anuncio` + `item_instancia` + `usuario` (vendedor e comprador). O desgaste vem de `fn_desgaste`. A média de cada oferta vem de `fn_media_vendas_comparaveis` (ver seção 6).
 
 ### 4.3 Comprar — janela sobre o Detalhe (essencial)
 
@@ -110,29 +108,29 @@ São **6 páginas** (cada uma com seu endereço) e **3 janelas** (abrem sobre um
 - **Resultado:** a janela mostra "Compra concluída", o protocolo da venda (ex.: VND-2026-0397) e a chave da nota fiscal, com links para o Inventário e para Negociações › Comprados.
 - **Bloqueios do banco:** comprar o próprio item, anúncio já vendido ou vencido.
 
-**Banco:** função nova `fn_comprar_anuncio` (ver seção 6), que faz 3 INSERTs (venda, pagamento e nota fiscal) e 3 UPDATEs (protocolo definitivo da venda, status do anúncio e dono do item) de forma atômica.
+**Banco:** função `fn_comprar_anuncio` (ver seção 6).
 
 ### 4.4 Inventário — `/inventario` (essencial)
 
 **Objetivo:** ver o que o usuário tem e colocar itens à venda.
 
 - **Resumo:** total de itens, negociáveis, anunciados e prontos para anunciar.
-- **Abas por tipo:** Todos, equipamentos, cosméticos e consumíveis (os três subtipos do banco), cada uma com o número de itens. A caixa "Só os que posso anunciar" deixa na lista, e nos números das abas, só os itens que podem ser anunciados. A aba e o filtro ficam no endereço (`?tipo=...&negociaveis=1`), e cada mudança pede a lista de novo ao banco.
+- **Abas por tipo:** Todos, equipamentos, cosméticos e consumíveis (os três subtipos do banco), cada uma com o número de itens. A caixa "Só os que posso anunciar" deixa na lista, e nos números das abas, só os itens que podem ser anunciados.
 - **Cada item:** imagem, nome, raridade, float e desgaste (equipamentos), StatTrak/Souvenir, adesivos aplicados, cargas (consumíveis) e um **status calculado**:
   - **Disponível** → mostra o botão "Anunciar";
   - **Anunciado (R$ X)** → link para o anúncio;
   - **Bloqueado**, **Aplicado em [arma]** ou **Consumido** → sem ação.
 - **Origem e uso em aberturas** (complementar): a caixa aberta mostra "Aberta em 20/06/2026 → AK-47 | Redline"; a chave, "Usada em 20/06/2026"; e o item obtido, "Obtido ao abrir Caixa Phoenix".
 
-**Banco:** `item_instancia` + `item_catalogo` + `raridade` + `categoria_item` + `LEFT JOIN` nos três subtipos + `aplicacao_cosmetico` + `anuncio` aberto + `abertura_recipiente`. Um item pode ser anunciado se estiver `disponivel`, for negociável e não tiver anúncio aberto. O tipo e "só os que posso anunciar" são filtrados no SQL (`inventario_usuario`), e `resumo_inventario` traz os indicadores do topo e o número de itens de cada aba, com e sem esse filtro.
+**Banco:** `item_instancia` + `item_catalogo` + `raridade` + `categoria_item` + `LEFT JOIN` nos três subtipos + `aplicacao_cosmetico` + `anuncio` aberto + `abertura_recipiente`. Um item pode ser anunciado se estiver `disponivel`, for negociável e não tiver anúncio aberto. O tipo e "só os que posso anunciar" são filtrados no SQL (`inventario_usuario`), e `resumo_inventario` traz os indicadores do topo e o número de itens de cada aba.
 
 ### 4.5 Novo anúncio — janela sobre o Inventário (essencial)
 
 - **Campos:** preço (maior que zero) e validade (7, 14 ou 30 dias).
-- **Análise de preço** (complementar): menor preço entre as outras ofertas do mesmo modelo que podem ser compradas (sem as reservadas), média das vendas e quanto o preço digitado está acima ou abaixo dela. A média é a das vendas da **mesma versão** do item (desgaste, StatTrak e Souvenir) quando ela tem 2 ou mais vendas; senão, a de todo o modelo. A tela indica a base usada (ex.: "Factory New" ou "todas as versões"), e a conta é a mesma do selo das ofertas no Detalhe.
+- **Análise de preço** (complementar): menor preço entre as outras ofertas do mesmo modelo que podem ser compradas, média das vendas comparáveis e quanto o preço digitado está acima ou abaixo dela. A tela indica a base usada.
 - **Publicar:** o anúncio é gravado **direto como `ativo`**. Como não há perfil de administrador para aprovar anúncios, o status `pendente` não é usado.
 
-**Banco:** `INSERT INTO anuncio`. O trigger `trg_validar_anuncio` e o índice `anuncio_aberto_por_item_uk` garantem dono certo, item disponível e um anúncio aberto por item. A análise de preço usa `vw_ofertas_ativas` (sem as reservadas) e a função `fn_media_vendas_comparaveis` (ver seção 6).
+**Banco:** `INSERT INTO anuncio`. O trigger `trg_validar_anuncio` e o índice `anuncio_aberto_por_item_uk` garantem dono certo, item disponível e um anúncio aberto por item. A análise de preço usa `vw_ofertas_ativas` e a função `fn_media_vendas_comparaveis` (ver seção 6).
 
 ### 4.6 Negociações — `/negociacoes` (essencial)
 
@@ -156,13 +154,13 @@ São **6 páginas** (cada uma com seu endereço) e **3 janelas** (abrem sobre um
 
 ### 4.7 Análise de mercado — `/analise` (complementar)
 
-- **Indicadores:** volume vendido (R$), número de vendas, ticket médio e ofertas à venda (sem as reservadas).
+- **Indicadores:** volume vendido (R$), número de vendas, ticket médio e ofertas à venda.
 - **Gráficos:** volume vendido por mês (com o número de vendas), ticket médio por mês, preço médio por raridade e volume por categoria.
 - **Rankings:** skins mais negociadas; maiores variações de preço; vendedores mais bem avaliados.
-- **Filtros:** período e categoria. Os atalhos de período ("Últimos 30 dias", "Últimos 90 dias", "Últimos 12 meses") terminam na última venda concluída quando ela é anterior a hoje, e a página avisa isso; senão, terminam hoje. Como os dados de demonstração têm datas fixas, contar sempre a partir de hoje deixaria esses períodos vazios com o passar das semanas.
-- **Avisos:** um aviso fixo ("Dados simulados para demonstração. Os preços e as vendas não representam o mercado real de Counter-Strike 2.") e, com menos de 30 vendas no filtro, um aviso de amostra pequena.
+- **Filtros:** período e categoria. Os atalhos de período ("Últimos 30 dias", "Últimos 90 dias", "Últimos 12 meses") terminam na última venda concluída quando ela é anterior a hoje, e a página avisa isso; senão, terminam hoje.
+- **Avisos:** dados simulados para demonstração e, quando o filtro tem poucas vendas, amostra pequena.
 
-**Banco:** agregações (`SUM`, `AVG`, `COUNT`, `date_trunc('month', ...)`) sobre `venda` + `anuncio` + `item_instancia` + `item_catalogo` + `raridade` + `categoria_item`; o ranking de vendedores usa `avaliacao` + `avaliacao_venda` + `usuario`. A data da última venda concluída vem em `indicadores_gerais` (`ultima_venda`) e não depende dos filtros.
+**Banco:** agregações (`SUM`, `AVG`, `COUNT`, `date_trunc('month', ...)`) sobre `venda` + `anuncio` + `item_instancia` + `item_catalogo` + `raridade` + `categoria_item`; o ranking de vendedores usa `avaliacao` + `avaliacao_venda` + `usuario`.
 
 ### 4.8 Perfil do usuário — `/usuario/:id` (complementar)
 
@@ -189,7 +187,7 @@ O SQL de cada operação está em [`database/consultas/`](../database/consultas/
 | **Publicar anúncio** | **Inserção** | `anuncio` (validado por trigger e índice) | Novo anúncio |
 | Anúncios, vendas e compras do usuário | Consulta | `anuncio`, `venda`, `pagamento`, `nota_fiscal`, `item_instancia`, `item_catalogo`, `equipamento`, `usuario`, `avaliacao`, `avaliacao_venda` | Negociações |
 | **Cancelar anúncio** | **Atualização** | `anuncio` | Negociações |
-| **Expirar anúncios vencidos** | **Atualização** (`fn_expirar_anuncios`) | `anuncio` (e `venda`, para não expirar os reservados) | Todas, antes de listar anúncios |
+| **Expirar anúncios vencidos** | **Atualização** (`fn_expirar_anuncios`) | `anuncio`, `venda` | Todas, antes de listar anúncios |
 | **Comprar** | **Inserção + atualização** (transação) | `venda`, `pagamento`, `nota_fiscal`, `anuncio`, `item_instancia` | Comprar |
 | Análise de preço | Consulta + agregação | `anuncio`, `venda`, `item_instancia`, `equipamento` | Novo anúncio, Detalhe |
 | Indicadores e rankings | Consulta + agregação | `venda`, `anuncio`, `item_instancia`, `item_catalogo`, `raridade`, `categoria_item`, `avaliacao`, `avaliacao_venda`, `usuario` | Análise |
@@ -209,13 +207,12 @@ Estão nos próprios scripts de `database/` e são conferidas pelos testes. Deta
 | 1 | Função `fn_comprar_anuncio(anuncio, comprador, metodo)` | Faz a compra inteira numa transação: confere se o anúncio está ativo e não vencido, cria venda, pagamento e nota fiscal, marca o anúncio como vendido e transfere o item |
 | 2 | Sequências do protocolo de venda (`VND-AAAA-NNNN`) e do ticket de avaliação (`TKT-AAAA-NNNN`) e geração da chave da nota fiscal (44 dígitos) | Necessário para a compra e a avaliação |
 | 3 | Regra de cancelamento (trigger `trg_transicao_anuncio`): não cancelar anúncio com venda pendente | Evita cancelar um negócio em andamento |
-| 4 | Função `fn_expirar_anuncios()` | Marca como `expirado` os anúncios abertos já vencidos, exceto os que têm venda pendente. A API a executa antes de listar (no máximo uma vez por minuto) |
+| 4 | Função `fn_expirar_anuncios()` | Marca como `expirado` os anúncios abertos já vencidos, exceto os que têm venda pendente. A API a executa antes de listar |
 | 5 | Regra de avaliação (triggers `trg_validar_avaliacao_venda` e `trg_validar_avaliacao_troca` + `fn_avaliar_venda`): só quem participou de uma venda concluída avalia, uma vez por venda | Necessário para "Avaliar vendedor" |
-| 6 | `imagem_base` como `TEXT` | Os links das imagens oficiais passam de 255 caracteres (o maior tem 287) |
+| 6 | `imagem_base` como `TEXT` | Os links das imagens oficiais passam de 255 caracteres |
 | 7 | Índices `idx_venda_data` e `idx_anuncio_ativo_expiracao` | Desempenho do histórico, das estatísticas e da expiração dos anúncios |
-| 8 | Função `fn_media_vendas_comparaveis(item)` | Média da análise de preço: vendas da mesma versão do item (desgaste, StatTrak e Souvenir) quando há 2 ou mais, senão todo o modelo. O Detalhe e o Novo anúncio usam a mesma conta |
-| 9 | Coluna `reservada` em `vw_ofertas_ativas` | Marca o anúncio ativo com venda pendente, que fica fora do menor preço e da contagem de ofertas |
-| 10 | Visões `vw_ofertas_ativas`, `vw_vendas_concluidas` e `vw_reputacao`; funções `fn_desgaste`, `fn_desgaste_nome` e `fn_sem_acento` | Junções e cálculos repetidos ficam no banco, e a busca do catálogo ignora acentos |
+| 8 | Função `fn_media_vendas_comparaveis(item)` | Média da análise de preço: vendas da mesma versão do item (desgaste, StatTrak e Souvenir) quando há 2 ou mais, senão todo o modelo |
+| 9 | Visões `vw_ofertas_ativas` (com a coluna `reservada`), `vw_vendas_concluidas` e `vw_reputacao`; funções `fn_desgaste`, `fn_desgaste_nome` e `fn_sem_acento` | Junções e cálculos repetidos ficam no banco, e a busca do catálogo ignora acentos |
 
 ---
 
@@ -225,4 +222,4 @@ Estão nos próprios scripts de `database/` e são conferidas pelos testes. Deta
 |---|---|
 | **Essencial** (atende o enunciado) | Seletor de usuário · Catálogo com busca, filtros e ordenação · Detalhe da skin · Inventário · Publicar e cancelar anúncio · Negociações (anúncios, vendas e compras) · Compra simulada · Publicação no Render + Neon |
 | **Complementar** (além do exigido pelo enunciado) | Análise de mercado · Análise de preço no anúncio e nas ofertas · Perfil com reputação · Avaliar vendedor após a compra · Origem e uso de aberturas no Inventário |
-| **Fora do escopo** | Login com senha (o banco não tem senha; o seletor "Entrar como" substitui o login) · Pagamento real · Criar trocas (só consulta, no Perfil) · Abrir caixas (só consulta, no Inventário) · Integração com a Steam · Painel de administrador (o banco não tem esse papel) |
+| **Fora do escopo** | Login com senha · Pagamento real · Criar trocas (só consulta, no Perfil) · Abrir caixas (só consulta, no Inventário) · Integração com a Steam · Painel de administrador (o banco não tem esse papel) |

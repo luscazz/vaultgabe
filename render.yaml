@@ -1,19 +1,16 @@
 # Configuracao do VaultGabe no Render (Blueprint).
-# No Render: New > Blueprint > escolher este repositorio. O Render cria o
-# servico web e so pede o valor de DATABASE_URL (connection string da branch
-# "production" do Neon).
 services:
   - type: web
     name: vaultgabe
     runtime: node
-    region: ohio            # mesma regiao do banco no Neon (AWS US East 2, Ohio)
+    region: ohio
     plan: free
     buildCommand: npm ci --omit=dev
     startCommand: npm start
     healthCheckPath: /api/saude
     autoDeployTrigger: commit
     envVars:
-      - key: DATABASE_URL   # preenchido no painel do Render; nunca no repositorio
+      - key: DATABASE_URL   # preenchido no painel do Render
         sync: false
       - key: NODE_ENV
         value: production

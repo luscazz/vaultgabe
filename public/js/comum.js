@@ -321,10 +321,8 @@ export const NOMES_TIPO = {
 
 // Situacao vinda do banco (sem acento) -> texto da tela.
 export const NOMES_STATUS = {
-  disponivel: 'Disponível', anunciado: 'Anunciado', aplicado: 'Aplicado', consumido: 'Consumido',
-  bloqueado: 'Bloqueado', ativo: 'Ativo', pendente: 'Pendente', vendido: 'Vendido',
-  cancelado: 'Cancelado', cancelada: 'Cancelada', expirado: 'Expirado', concluida: 'Concluída',
-  aprovado: 'Aprovado', recusado: 'Recusado', recusada: 'Recusada', aceita: 'Aceita',
+  pendente: 'Pendente', cancelado: 'Cancelado', cancelada: 'Cancelada', expirado: 'Expirado',
+  concluida: 'Concluída', recusado: 'Recusado', recusada: 'Recusada', aceita: 'Aceita',
 };
 
 export const NOMES_PAGAMENTO = {

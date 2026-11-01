@@ -2,10 +2,9 @@
 //   graficoColunas  -> um valor por mes (ex.: volume vendido)
 //   graficoLinha    -> evolucao de um valor, com faixa opcional (menor/maior)
 //   graficoBarras   -> comparacao entre categorias (barras horizontais)
-// Uma cor de dados so (azul, validada contra o fundo escuro; o ambar fica
-// para o que e clicavel). Colunas e linha: dica com mouse, toque e setas do
-// teclado; barras: dica com mouse ou Tab. Todo grafico tem o botao
-// "Ver tabela" com os mesmos numeros.
+// Uma cor de dados so (azul; o ambar fica para o que e clicavel). Colunas e
+// linha: dica com mouse, toque e setas do teclado; barras: dica com mouse ou
+// Tab. Todo grafico tem o botao "Ver tabela" com os mesmos numeros.
 import { escaparHtml, formatarPreco } from './comum.js';
 
 const SVG = 'http://www.w3.org/2000/svg';

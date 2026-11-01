@@ -21,9 +21,7 @@ function enderecoDoBanco() {
   if (!texto) {
     throw new ErroApi(503, 'Banco de dados não configurado: defina DATABASE_URL no .env.');
   }
-  // O Neon entrega "sslmode=require". O driver ja trata esse modo como
-  // "verify-full" (conexao criptografada e certificado conferido) e avisa que
-  // isso vai mudar na proxima versao; pedir verify-full deixa explicito.
+  // Conexao criptografada com certificado conferido: "require" vira "verify-full".
   const url = new URL(texto);
   if (url.searchParams.get('sslmode') === 'require') url.searchParams.set('sslmode', 'verify-full');
   return url.toString();

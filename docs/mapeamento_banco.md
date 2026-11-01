@@ -109,6 +109,7 @@ Operações de várias etapas ficam no próprio banco. Cada chamada é atômica:
 | `fn_media_vendas_comparaveis(item)` | Média das vendas concluídas para a análise de preço: as do mesmo modelo e da mesma versão do item (desgaste, StatTrak e Souvenir) quando são 2 ou mais; senão, ou fora de equipamento, todas as vendas do modelo. A página da skin (`ofertas_do_modelo`) e o Novo anúncio (`analise_preco_anuncio`) usam a mesma conta | `preco_medio` (sem arredondar), `vendas`, `base` (`versao` ou `modelo`) |
 
 - **Numeração sem buracos:** os protocolos (`VND-AAAA-NNNN`) e os tickets (`TKT-AAAA-NNNN`) vêm das sequências `venda_protocolo_seq` e `avaliacao_ticket_seq`, que continuam a partir dos dados de demonstração. O número só é gerado depois que todas as validações passam, então uma compra ou avaliação recusada não pula números.
+- **Operações simultâneas:** `fn_comprar_anuncio` trava o anúncio e o item, o trigger 5 trava o item e `fn_avaliar_venda` trava a venda (`FOR UPDATE`): a segunda operação sobre o mesmo anúncio, item ou venda espera a primeira terminar e é validada com os dados já atualizados.
 - **Índices novos:** `idx_venda_data` (histórico e estatísticas por período) e `idx_anuncio_ativo_expiracao` (vencimento dos anúncios ativos).
 - **Visões de apoio** (em `01_tabelas.sql`), usadas pelas consultas de `database/consultas/`: `vw_ofertas_ativas` (anúncios ativos e não vencidos; a coluna `reservada` marca os que têm venda pendente, que continuam listados mas ficam fora do menor preço e da contagem de ofertas), `vw_vendas_concluidas` (vendas concluídas com item, modelo, vendedor e comprador) e `vw_reputacao` (nota média e número de avaliações por usuário).
 
@@ -120,24 +121,19 @@ O `03_dados.sql` traz a base herdada de Banco de Dados I, usada também pelos te
 
 | | 03 | 03 + 04 |
 |---|---:|---:|
-| Modelos (`item_catalogo`) | 21 | **80**, todos itens reais do CS2 com a imagem oficial |
-| Coleções | 12 | 29 |
-| Exemplares (`item_instancia`) | 54 | **297** (192 equipamentos, 56 cosméticos, 49 consumíveis) |
 | Vendas concluídas | 10 | **394**, de novembro/2025 a outubro/2026, com vendas em todos os 12 meses |
-| Avaliações | 10 | 158 |
 | Anúncios ativos | 6 | **80**, vencendo entre abril e setembro de 2027 |
 | Anúncios cancelados / expirados | 2 / 1 | 15 / 9 |
 
 - **Todos os 80 modelos têm 3 ou mais vendas**, o que garante dados para o gráfico de preço do Detalhe e para os rankings da Análise.
-- **Os preços são simulados** (preço de referência do modelo × desgaste × StatTrak ou Souvenir × tendência mensal × variação de ±7%), e a interface avisa isso. O script é determinístico: os "sorteios" usam `md5` de um texto fixo, e não `random()`, então rodar de novo gera os mesmos dados.
-- **Steam Guard pesa na reputação:** a Steam segura por até 15 dias os itens enviados por contas sem o autenticador móvel. Por isso os vendedores com `steam_guard_ativo = FALSE` (dfontes, pepaa, isizinha e bruninmatador) recebem notas de 2 a 4, com comentários sobre a demora na entrega, escritos mais de 15 dias depois da venda; quem compra deles só anuncia o item depois desse prazo. Na nota média, esses quatro ficam entre 3,1 e 3,8, e os demais entre 4,0 e 4,5. O site mostra o aviso no perfil, ao lado do vendedor nas ofertas e na janela Comprar. A retenção é simulada só nas vendas do 04; a compra feita pelo site entrega o item na hora.
+- **Os preços são simulados** (preço de referência do modelo × desgaste × StatTrak ou Souvenir × tendência mensal × variação de ±7%), e a interface avisa isso.
+- **Steam Guard pesa na reputação:** a Steam segura por até 15 dias os itens enviados por contas sem o autenticador móvel. Por isso os vendedores com `steam_guard_ativo = FALSE` (dfontes, pepaa, isizinha e bruninmatador) recebem notas de 2 a 4, com comentários sobre a demora na entrega, escritos mais de 15 dias depois da venda; nesses dados, quem compra deles só anuncia o item depois desse prazo.
 - **Linha do tempo de posse coerente:** cada anúncio e cada troca usam um item que pertencia ao participante naquela data, e as revendas vêm depois da compra anterior.
 - **Status em aberto de propósito:** a venda `VND-2026-0011` (boleto) fica pendente, para mostrar a oferta reservada, e 3 trocas ficam abertas (2 pendentes e 1 aceita), para mostrar todos os status.
-- **Numeração:** segue a ordem de cadastro. As vendas do 03 (jan–fev/2026) mantêm `VND-2026-0001` a `0012`, e as do 04 continuam de `0013`, inclusive as de nov–dez/2025 (`VND-2025-0013` em diante; o mesmo vale para os tickets e para o número da nota fiscal).
 
 **Usuários indicados para demonstração:**
 - Isabela (`isizinha`): usuária padrão e maior compradora (41 compras), com a AK-47 \| Redline com 3 adesivos aplicados.
-- Diego (`dfontes`): vendedor sem Steam Guard (aviso no perfil, nas ofertas e na janela Comprar), com 6 anúncios ativos.
+- Diego (`dfontes`): vendedor sem Steam Guard, com 6 anúncios ativos.
 - Larissa (`lari`): revendedora, com 9 anúncios ativos, entre eles a M4A4 \| Howl e a Karambit \| Doppler.
 
 ---
@@ -158,32 +154,14 @@ As correções abaixo foram feitas sobre o banco do BD I: as regras ficam em `01
 | Venda concluída não transferia o item, e a compra exigia vários comandos separados | Função `fn_comprar_anuncio`, atômica |
 | Anúncio vencido continuava `ativo` | Função `fn_expirar_anuncios`, chamada pela aplicação antes de listar |
 | Não havia regra para quem pode avaliar | Triggers 7 e 8, regra RS-25 e função `fn_avaliar_venda` |
-| Não há senha em `usuario` | Seletor "Entrar como" (ver `escopo.md`) |
-| A moeda não é registrada | A interface exibe sempre em R$ (ver `escopo.md`) |
-| Não havia imagens (`imagem_base` apontava para arquivos `img/*.png` inexistentes) | Cada modelo recebeu o link da imagem oficial (servidor da Steam), obtido no [CSGO-API](https://github.com/ByMykel/CSGO-API); `imagem_base` virou `TEXT`, porque os links passam de 255 caracteres (o maior tem 287). Se um link falhar, o site mostra o nome do item na cor da raridade |
-| Dois modelos não existiam no jogo | `P90 \| Dry Season` virou a skin real `P90 \| Sand Spray` (mesma arma, raridade e descrição, com a faixa de float real: 0,06 a 0,80). A `Capsula de Chaveiros` saiu (no CS2 chaveiros não vêm em cápsula): suas 2 unidades viraram `Capsula Ambush`, e o que saiu delas virou adesivo |
+| Não havia imagens (`imagem_base` apontava para arquivos `img/*.png` inexistentes) | Cada modelo recebeu o link da imagem oficial (servidor da Steam), obtido no [CSGO-API](https://github.com/ByMykel/CSGO-API); `imagem_base` virou `TEXT`, porque os links passam de 255 caracteres |
+| Dois modelos não existiam no jogo | `P90 \| Dry Season` virou a skin real `P90 \| Sand Spray`. A `Capsula de Chaveiros` saiu (no CS2 chaveiros não vêm em cápsula) |
 | Raridades diferentes das do jogo | 8 modelos alinhados com o CS2 (ex.: Karambit agora é Covert; Adesivo Crown (Foil) é Exotic) |
-| Alguns modelos do 03 estavam em coleções diferentes das do jogo, e dois nomes de coleção eram de caixa/operação (`The Danger Zone Case`, `Operation Bravo`); 5 chaveiros tinham sido obtidos antes de existirem no jogo | Seção 11.1 do 04, conferida com o CSGO-API: modelos nas coleções certas, nomes trocados por `The Danger Zone Collection` e `The Bravo Collection`, 2 coleções novas sem data de lançamento confirmada (`The Dust 2 Collection` e `Small Arms Charm Collection`) e a `The Cache Collection` removida, porque ficou vazia quando a AK-47 \| Redline passou para a The Phoenix Collection; as datas de obtenção de 5 dos 6 chaveiros do 03 passam para depois de 02/10/2024, quando os chaveiros chegaram ao jogo |
+| Alguns modelos do 03 estavam em coleções diferentes das do jogo, e dois nomes de coleção eram de caixa/operação (`The Danger Zone Case`, `Operation Bravo`); 5 chaveiros tinham sido obtidos antes de existirem no jogo | Seção 11.1 do 04: coleções e datas de obtenção alinhadas com o CS2 |
 | Variantes que não existem no jogo: uma Desert Eagle \| Blaze StatTrak e um AWP \| Asiimov Souvenir | Seção 11.2 do 04: os dois exemplares passam a comuns |
-| A Cápsula Ambush estava anunciada (e vendida, com pagamento pendente) por R$ 680,00, cerca de cem vezes o preço das outras vendas do modelo | Seção 11.3 do 04: anúncio, venda e pagamento passam a R$ 6,80 |
-| As aberturas davam itens que não saem daqueles recipientes (Caixa Fracture → AK-47 \| Redline; Cápsula Ambush → adesivos de outras cápsulas), e a chave era a do CS:GO, que não abre a caixa | Seção 11.4 do 04: a caixa vira Caixa Phoenix (a da Redline), a chave vira Chave da Caixa Phoenix, a cápsula vira Cápsula Katowice 2014 Challengers (a do adesivo Natus Vincere (Holo)) e o adesivo da 5ª abertura passa a ser Natus Vincere (Holo) |
-| Chaves de NF-e do 03 com dígito verificador errado (9 de 10) e uma com o mês errado | Chaves recalculadas no `03_dados.sql` com o mesmo módulo 11 de `fn_gerar_chave_nfe` |
+| Preço da Cápsula Ambush (R$ 680,00) cerca de cem vezes o das outras vendas do modelo | Seção 11.3 do 04: R$ 6,80 |
 | Cor da raridade Extraordinary diferente da do CS2 (`#ffd700`) | `#eb4b4b`, a cor usada pelo jogo |
-| Laudos de duas trocas não batiam com os itens (`TRC-2026-0003` e `0004`) | Textos corrigidos no `03_dados.sql` |
-| Detalhes dos usuários e dos itens | Apelidos de 4 usuários, datas de cadastro variadas, chaveiro aplicado sem nível de raspagem (chaveiro não raspa) e comentário da `TKT-2026-0003` falando do item, e não de troca (é a avaliação de uma venda) |
-| Os scripts são ASCII, então nomes, comentários e descrições apareciam sem acento na tela ("Capsula", "negociacao") | A seção 11.5 do 04 grava os acentos com escape Unicode (`U&'\00E1'`), sem deixar de ser ASCII; a busca do catálogo usa `fn_sem_acento` e encontra "capsula" ou "cápsula" |
-| Poucos dados para estatísticas (no máximo 1 venda por modelo, e 11 dos 21 modelos sem nenhuma) e anúncios de demonstração vencendo em dezembro/2026 | `04_dados_ampliados.sql`, com 394 vendas em 12 meses (ver a seção 4 deste documento); os 6 anúncios ativos do 03 passaram a vencer em abril/2027 |
-
----
-
-## 6. Ajustes da aplicação e da hospedagem
-
-Ajustes feitos durante o desenvolvimento da aplicação, sem relação com o BD I:
-
-| Problema | Correção |
-|---|---|
-| O Neon usa o fuso UTC, e as datas gravadas com `now()` ficariam 3 horas adiantadas | Banco configurado com `timezone = America/Sao_Paulo` nas duas branches |
-| O driver do Node convertia `DATE` e `TIMESTAMP` para o fuso do servidor, e as datas apareciam deslocadas | `src/banco.js` recebe datas como texto, já no horário de São Paulo |
-| Protocolo e ticket usavam `lpad(numero, 4)`: a partir da venda 10.000 o número era cortado e repetia protocolos | O número tem pelo menos 4 dígitos e cresce depois de 9999 (`fn_comprar_anuncio` e `fn_avaliar_venda`) |
-| Duas avaliações da mesma compra enviadas ao mesmo tempo passavam as duas; um anúncio publicado durante a compra do anúncio anterior do mesmo item via o dono antigo | `fn_avaliar_venda` trava a venda; o trigger 5 e `fn_comprar_anuncio` travam o item (`FOR UPDATE`) |
-| O ranking "Vendedores mais bem avaliados" misturava notas de compras e de trocas | Passou a usar só as notas recebidas nas vendas (`vendedores_mais_bem_avaliados`) |
+| As aberturas davam itens que não saem daqueles recipientes (Caixa Fracture → AK-47 \| Redline; Cápsula Ambush → adesivos de outras cápsulas), e a chave era a do CS:GO, que não abre a caixa | Seção 11.4 do 04: recipientes, chaves e itens obtidos trocados por combinações que existem no jogo |
+| Chaves de NF-e do 03 com dígito verificador errado (9 de 10) e uma com o mês errado | Chaves recalculadas no `03_dados.sql` com o mesmo módulo 11 de `fn_gerar_chave_nfe` |
+| Nomes, comentários e descrições apareciam sem acento na tela ("Capsula", "negociacao") | Seção 11.5 do 04: acentos gravados nos textos; a busca ignora acentos (`fn_sem_acento`) |
+| Poucos dados para estatísticas (no máximo 1 venda por modelo, e 11 dos 21 modelos sem nenhuma) | `04_dados_ampliados.sql` (ver a seção 4 deste documento) |

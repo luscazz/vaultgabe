@@ -85,7 +85,7 @@ const respostaPara = async (nome, params) => {
     await consultar(nome, params);
     return { status: 200 };
   } catch (err) {
-    const res = { status: 0, corpo: null, headersSent: false, statusFn: null };
+    const res = { corpo: null, headersSent: false };
     res.status = (s) => { res.codigo = s; return res; };
     res.json = (c) => { res.corpo = c; return res; };
     tratarErros(err, {}, res, () => {});

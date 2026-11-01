@@ -16,8 +16,7 @@
 
 
 -- ==========================================================
---  1. CONTAGEM DE TUPLAS x MINIMO EXIGIDO
---     (>=10 para tabelas de entidade do MER, >=5 nas demais)
+--  1. CONTAGEM DE TUPLAS
 -- ==========================================================
 
 WITH contagens (tabela, qtd, minimo, origem) AS (

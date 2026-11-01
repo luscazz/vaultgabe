@@ -156,9 +156,8 @@ main.container {
   text-align: center;
 }
 .rodape-marca { display: block; margin-bottom: 8px; border-radius: var(--raio); }
-.rodape-marca img { width: 96px; height: 96px; }
+.rodape-marca img { width: 96px; height: 96px; transition: transform 0.15s ease; }
 .rodape-marca:hover img { transform: scale(1.04); }
-.rodape-marca img { transition: transform 0.15s ease; }
 .rodape p { margin: 0; max-width: 760px; }
 .rodape-nota { font-size: 0.8rem; }
 
@@ -275,8 +274,8 @@ select:disabled { opacity: 0.6; }
   color: var(--texto-suave);
   border: 1px solid var(--borda);
 }
-/* O texto do selo usa a cor clareada (contraste minimo 4,5:1 no tema
-   escuro); a borda mantem a cor original. */
+/* O texto do selo usa a cor clareada (legivel no tema escuro); a borda
+   mantem a cor original. */
 .selo-raridade {
   color: color-mix(in srgb, var(--cor-raridade, var(--texto-suave)) 65%, white);
   border-color: var(--cor-raridade, var(--borda));
@@ -303,9 +302,9 @@ select:disabled { opacity: 0.6; }
   border-radius: var(--raio);
   overflow: hidden;
   color: var(--texto);
+  transition: transform 0.15s ease, border-color 0.15s ease;
 }
 a.card-item:hover { border-color: var(--cor-raridade, var(--texto-suave)); text-decoration: none; transform: translateY(-2px); }
-.card-item { transition: transform 0.15s ease, border-color 0.15s ease; }
 
 .card-imagem {
   aspect-ratio: 4 / 3;
@@ -438,7 +437,7 @@ a.card-item:hover { border-color: var(--cor-raridade, var(--texto-suave)); text-
 .avaliacao p { margin: 6px 0; }
 .ver-todas { margin: 0 20px 16px; }
 .nota-estrelas { color: var(--destaque); letter-spacing: 2px; }
-.nota-estrelas .apagadas { color: #6b7487; } /* contraste 3,7:1 no cartao */
+.nota-estrelas .apagadas { color: #6b7487; }
 
 /* Steam Guard desativado: aviso no perfil e nas ofertas. */
 .aviso.aviso-atencao { border-color: var(--aviso); color: var(--texto); margin: 0 0 16px; }
@@ -660,9 +659,8 @@ table.tabela { width: 100%; border-collapse: collapse; }
 .area-grafico { min-height: 260px; }
 
 /* ---------- Graficos (public/js/graficos.js) ----------
-   Uma cor de dados (azul #3987e5, validada contra o fundo dos paineis:
-   contraste >= 3:1 e faixa de luminosidade do tema escuro). O ambar do
-   site fica para o que e clicavel. */
+   Uma cor de dados (azul #3987e5). O ambar do site fica para o que e
+   clicavel. */
 .figura-grafico { position: relative; --dado: #3987e5; }
 .grafico-desenho svg { display: block; overflow: visible; }
 .grafico-desenho .grade { stroke: var(--borda); stroke-width: 1; }
@@ -739,7 +737,7 @@ table.tabela { width: 100%; border-collapse: collapse; }
 .grade-graficos .largo { grid-column: 1 / -1; }
 .variacao { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
 /* Alta em verde e queda em vermelho, sempre com a seta (a cor nao e a
-   unica pista). Contraste no painel: verde 6,9:1, vermelho 5,2:1. */
+   unica pista). */
 .variacao.alta { color: var(--sucesso); }
 .variacao.queda { color: var(--perigo); }
 @media (max-width: 960px) {
@@ -812,14 +810,14 @@ dialog.janela::backdrop { background: rgba(0, 0, 0, 0.6); }
 
 /* ---------- Telas menores ---------- */
 /* Topo em duas linhas (marca e usuario em cima, menu embaixo) quando nao
-   cabe tudo numa linha: marca + menu + "Entrar como" + seletor ~ 1040px. */
+   cabe tudo numa linha. */
 @media (max-width: 1080px) {
   .topo .container { flex-wrap: wrap; gap: 8px 16px; padding-top: 10px; padding-bottom: 10px; }
   .navegacao { order: 3; flex-basis: 100%; }
   .seletor-usuario { margin-left: auto; }
   /* O topo ficou mais alto: o painel de filtros fixo comeca mais abaixo. */
   .layout-lateral > aside { top: 128px; max-height: calc(100vh - 140px); }
-  /* Celulas mais justas: a aba Comprados cabe em 1024px sem rolar de lado. */
+  /* Celulas mais justas: a aba Comprados cabe sem rolar de lado. */
   .tabela th, .tabela td { padding: 10px 8px; }
 }
 
@@ -884,7 +882,7 @@ dialog.janela::backdrop { background: rgba(0, 0, 0, 0.6); }
   h1 { font-size: 1.45rem; }
 }
 
-/* Celulares estreitos (360px): o menu continua numa linha so. */
+/* Celulares estreitos: o menu continua numa linha so. */
 @media (max-width: 400px) {
   .navegacao a { padding: 7px 4px; font-size: 0.85rem; }
 }

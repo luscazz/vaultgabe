@@ -4,7 +4,7 @@
 --      historico de negociacoes para os graficos e rankings da aplicacao
 --
 -- ORDEM DE EXECUCAO: 01_tabelas -> 02_regras -> 03_dados -> 04_dados_ampliados -> 05_verificacao
--- Este script ACRESCENTA dados aos do 03, corrige alguns deles (secao 11)
+-- Este script ACRESCENTA dados aos do 03, ajusta alguns deles (secao 11)
 -- e roda com os triggers do 02 ligados: cada anuncio, venda e avaliacao passa pelas
 -- mesmas regras que valem para a aplicacao.
 -- Para executa-lo de novo, rode antes o 03 (que limpa e recarrega tudo).
@@ -16,7 +16,7 @@
 --   Ja os precos, vendas, avaliacoes e anuncios sao valores SIMULADOS
 --   para a demonstracao. NAO sao precos reais de mercado.
 --
--- O QUE ESTE SCRIPT ACRESCENTA (numeros exatos no resumo, no fim):
+-- O QUE ESTE SCRIPT ACRESCENTA:
 --   colecao             16 colecoes reais novas, com a data de lancamento
 --                       (a secao 11.1 acrescenta 2 e remove 1 que fica vazia)
 --   item_catalogo       59 modelos novos (21 do 03 + 59 = 80)
@@ -29,64 +29,18 @@
 --                       para o vendedor
 --   anuncio             anuncios ativos publicados em outubro/2026 e
 --                       anuncios cancelados/expirados (aba Encerrados)
---   ajustes no 03       colecoes conferidas com o CSGO-API, datas dos
---                       chaveiros, variantes impossiveis, preco da capsula,
---                       aberturas coerentes com os recipientes e acentos
---                       nos textos (secao 11)
+--   ajustes no 03       colecoes, datas dos chaveiros, variantes, preco
+--                       da capsula, aberturas e acentos (secao 11)
 --
 -- COMO OS DADOS SAO GERADOS
 --   A secao 3 tem uma linha de parametros por modelo (preco de
 --   referencia e quantidade de exemplares). A partir dela, os exemplares
---   e as vendas saem de generate_series. Os "sorteios" (dono, float,
---   datas, comprador, ruido do preco...) usam pg_temp.sorteio(texto),
---   que tira um numero entre 0 e 1 do md5 de um texto fixo. Nao ha
---   random() nem now(): o script gera SEMPRE os mesmos dados, em
---   qualquer dia em que for executado.
---   Por isso a chave da nota fiscal vem de pg_temp.chave_nfe(numero,
---   data de emissao): o mesmo calculo de fn_gerar_chave_nfe
---   (02_regras.sql), mas com o ano/mes da EMISSAO da nota, e nao o da
---   execucao (fn_gerar_chave_nfe continua sendo usada nas compras feitas
---   pela aplicacao, emitidas no proprio dia).
---
--- PRECO SIMULADO (pg_temp.preco_simulado, secao 3)
---   preco_ref do modelo
---     x desgaste   FN 1,30 | MW 1,12 | FT 1,00 | WW 0,90 | BS 0,80,
---                  em relacao ao desgaste tipico do modelo
---     x StatTrak   1,45 (facas 1,15)      x Souvenir 1,50
---     x tendencia  cada modelo sobe ou cai entre -2% e +3% ao mes
---     x ajuste     ruido de +-7% na venda; margem do vendedor nos anuncios
---
--- CLASSE VENDIDA (secao 3) E EXEMPLARES DE REFERENCIA (secao 4.5)
---   Cada modelo tem uma classe vendida: a versao mais negociada dele, no
---   desgaste tipico e sem StatTrak (nos modelos com versao Souvenir,
---   cerca de metade, sorteada por modelo, e vendida como Souvenir). Nos
---   modelos que o 03 ja vendeu, vale a classe do exemplar vendido no 03.
---   Os exemplares que tem a 1a ou a ultima venda (cronologica) de cada
---   modelo sao os de REFERENCIA e ficam nessa classe: assim o ranking de
---   maiores variacoes (primeira x ultima venda) mostra a TENDENCIA do
---   preco, e nao a troca de um FN por um BS ou de um StatTrak por um
---   comum.
---   Os demais exemplares vendidos variam de desgaste e de StatTrak
---   (secao 4.5): por isso o historico de vendas mostra o FN mais caro
---   que o BS e o premio do StatTrak.
---   Os exemplares que nunca foram vendidos cobrem todos os desgastes,
---   StatTrak e Souvenir, e aparecem nos anuncios ativos e encerrados.
---
--- LINHA DO TEMPO DE POSSE (a mesma regra temporal do 03)
---   - Os exemplares novos sao obtidos ate 15/10/2025, antes da 1a venda
---     (exceto alguns 'bloqueado', recebidos em outubro/2026, que nunca
---     sao anunciados).
---   - Cada exemplar tem uma CADEIA de 0 a 3 vendas: o 1o vendedor e o
---     dono original e o comprador de uma venda e o vendedor da seguinte
---     (revenda). Cada anuncio e publicado DEPOIS da compra anterior.
---   - As vendas sao gravadas em ordem cronologica (secao 7). Em cada
---     anuncio, o trigger trg_validar_anuncio confere que o vendedor e o
---     dono do item NAQUELE momento; so depois da venda a posse passa ao
---     comprador. No fim, o dono de cada item e o comprador da sua ultima
---     venda (regras RS-04 e RS-07 de 05_verificacao.sql).
---   - Anuncios cancelados/expirados usam so itens que nunca foram
---     vendidos; os anuncios ativos de outubro vem depois da ultima venda
---     do item (as cadeias desses itens terminam ate 30/09/2026).
+--   e as vendas saem de generate_series, e os precos, de
+--   pg_temp.preco_simulado. Os "sorteios" (dono, float, datas,
+--   comprador, ruido do preco...) usam pg_temp.sorteio(texto), que tira
+--   um numero entre 0 e 1 do md5 de um texto fixo. Nao ha random() nem
+--   now(): o script gera SEMPRE os mesmos dados, em qualquer dia em que
+--   for executado.
 -- =====================================================================
 
 BEGIN;
@@ -526,19 +480,14 @@ INSERT INTO item_catalogo (nome_item, categoria_id, raridade_id, colecao_id, ima
 -- 3. PARAMETROS DA SIMULACAO  (tabela temporaria, um modelo por linha)
 --    preco_ref   preco SIMULADO em reais, no desgaste tipico do modelo,
 --                sem StatTrak e em 01/11/2025 (inicio da tendencia).
---                Segue os precos do 03. Exemplos: AWP | Asiimov
---                R$ 1.150 (FT), M4A4 | Howl R$ 9.300 (FT; as vendas sao
---                de MW, como a do 03) e Karambit | Doppler R$ 5.300 (FN).
---                Com a tendencia e o ruido, a media das vendas desses
---                tres modelos fica em cerca de R$ 1.090, R$ 9.750 e
---                R$ 5.920 (contando as vendas do 03).
+--                Segue os precos do 03.
 --    exemplares  quantos exemplares novos do modelo este script cria.
 --    permite_st  o CSGO-API indica versao StatTrak (luvas: nunca).
 --    permite_sv  existe versao Souvenir (skin que sai de pacote de
 --                lembranca de campeonato). Facas e luvas: nunca.
 --    Calculados abaixo: o float tipico, a tendencia e a CLASSE VENDIDA
 --    (faixa de float e StatTrak/Souvenir dos exemplares de referencia,
---    que tem a 1a ou a ultima venda do modelo; ver o cabecalho).
+--    que tem a 1a ou a ultima venda do modelo; ver a secao 4.5).
 -- ---------------------------------------------------------------------
 CREATE TEMP TABLE tmp_modelo (
     ordem        INTEGER        PRIMARY KEY,
@@ -672,9 +621,12 @@ UPDATE tmp_modelo m
   JOIN categoria_item c ON c.id = ic.categoria_id
  WHERE ic.nome_item = m.nome_item;
 
--- CLASSE VENDIDA de cada equipamento (ver o cabecalho). Nos modelos que
--- o 03 ja vendeu, e a do exemplar vendido no 03 (StatTrak/Souvenir so se
--- o CSGO-API permitir), para essa venda ficar na mesma serie de precos.
+-- CLASSE VENDIDA de cada equipamento: a versao mais negociada do modelo,
+-- no desgaste tipico e sem StatTrak (nos modelos com versao Souvenir,
+-- cerca de metade, sorteada por modelo, e vendida como Souvenir). Nos
+-- modelos que o 03 ja vendeu, e a do exemplar vendido no 03
+-- (StatTrak/Souvenir so se o CSGO-API permitir), para essa venda ficar
+-- na mesma serie de precos.
 WITH vendido_no_03 AS (
     SELECT DISTINCT ON (vc.modelo_id)
            vc.modelo_id, e.float_value, e.stattrak_flag, e.souvenir_flag
@@ -720,7 +672,10 @@ BEGIN
     END IF;
 END $$;
 
--- Preco SIMULADO de um exemplar numa data (formula do cabecalho).
+-- Preco SIMULADO de um exemplar numa data:
+--   preco_ref x desgaste (em relacao ao desgaste tipico do modelo)
+--             x StatTrak (1,45; facas 1,15) x Souvenir (1,50)
+--             x tendencia do modelo (-2% a +3% ao mes) x p_ajuste.
 --   p_ajuste: ruido da venda ou margem do anunciante (1 = sem ajuste).
 --   Arredondamento: centavos abaixo de R$ 100, dezenas de centavos
 --   ate R$ 1.000 e reais inteiros acima disso.
@@ -1195,8 +1150,7 @@ SELECT c.id, arma.id, a.coord_x, a.coord_y, a.rotacao, a.nivel_raspagem
 --         venda, NNNN = nextval('venda_protocolo_seq'), que continua a
 --         numeracao do 03 (sem repetir)
 --      3) pagamento 'aprovado' com o valor integral
---      4) nota fiscal com pg_temp.chave_nfe(NNNN, data de emissao): a
---         chave de fn_gerar_chave_nfe, com o ano/mes da emissao
+--      4) nota fiscal com pg_temp.chave_nfe(NNNN, data de emissao)
 --      5) anuncio -> 'vendido' (trg_transicao_anuncio confere a venda)
 --      6) o item passa ao comprador (os cosmeticos aplicados vao junto)
 -- ---------------------------------------------------------------------
@@ -1248,10 +1202,8 @@ END $$;
 
 -- ---------------------------------------------------------------------
 -- 8. AVALIACAO + AVALIACAO_VENDA  (comprador avalia o vendedor)
---    Cerca de 39% das vendas novas (148 de 384: sorteio de 42%, sem as
---    compras da isizinha desde 01/09/2026 e as que passariam de
---    26/10/2026), de 3 horas a 3,5 dias depois da venda. Notas na
---    maioria 4 e 5, com algumas de 1 a 3.
+--    Cerca de 39% das vendas novas, de 3 horas a 3,5 dias depois da
+--    venda. Notas na maioria 4 e 5, com algumas de 1 a 3.
 --    Vendedor SEM Steam Guard: a Steam segura por ate 15 dias os itens
 --    enviados por contas sem o autenticador movel, entao a avaliacao vem
 --    15 dias mais tarde, com nota de 2 a 4 (media perto de 3) e comentario
@@ -1292,8 +1244,7 @@ INSERT INTO tmp_comentario (nota, ordem, texto) VALUES
     (1, 0, 'Nao respondia as mensagens. Nao recomendo.'),
     (1, 1, 'Experiencia ruim: o item demorou dias para chegar.');
 
--- Comentarios para vendedor sem Steam Guard (entrega retida por ate 15
--- dias). Nenhum fala em "troca", que no site e outra coisa (tabela troca).
+-- Comentarios para vendedor sem Steam Guard (entrega retida por ate 15 dias).
 CREATE TEMP TABLE tmp_comentario_retido (
     nota    INTEGER  NOT NULL,
     ordem   INTEGER  NOT NULL,
@@ -1463,18 +1414,15 @@ SELECT i.id,
 
 -- ---------------------------------------------------------------------
 -- 11. AJUSTES NOS DADOS DO 03
---     Correcoes feitas depois de conferir o catalogo com o CSGO-API. So
---     valem quando o 04 e executado.
+--     Rodando so o 03, os dados ficam sem estes ajustes.
 --
--- 11.1 Colecoes conferidas com o CSGO-API: alguns modelos do 03 estavam
---      em colecoes trocadas. Facas, luvas e adesivos de torneio nao
---      pertencem a colecao nenhuma (NULL), como no CSGO-API.
---      5 dos 6 chaveiros do 03 eram obtidos antes de 02/10/2024, quando
---      os chaveiros chegaram ao jogo: a data passa 7 meses para frente.
+-- 11.1 Colecoes dos modelos do 03 conforme o CSGO-API. Facas, luvas e
+--      adesivos de torneio nao pertencem a colecao nenhuma (NULL).
+--      Tambem ajusta a data de obtencao dos chaveiros.
 -- ---------------------------------------------------------------------
 INSERT INTO colecao (nome_colecao, data_lancamento) VALUES
-    ('The Dust 2 Collection',       NULL),   -- data nao confirmada
-    ('Small Arms Charm Collection', NULL);   -- data nao confirmada
+    ('The Dust 2 Collection',       NULL),   -- sem data de lancamento no CSGO-API
+    ('Small Arms Charm Collection', NULL);   -- sem data de lancamento no CSGO-API
 
 UPDATE item_catalogo ic
    SET colecao_id = (SELECT co.id FROM colecao co WHERE co.nome_colecao = c.colecao)
@@ -1501,16 +1449,16 @@ UPDATE item_instancia SET data_obtencao = data_obtencao + INTERVAL '7 months'
 DELETE FROM colecao co
  WHERE NOT EXISTS (SELECT 1 FROM item_catalogo ic WHERE ic.colecao_id = co.id);
 
--- Dois nomes do 03 eram de caixa/operacao, nao de colecao.
+-- Nomes de duas colecoes do 03 conforme o CSGO-API.
 UPDATE colecao SET nome_colecao = 'The Danger Zone Collection' WHERE nome_colecao = 'The Danger Zone Case';
 UPDATE colecao SET nome_colecao = 'The Bravo Collection'       WHERE nome_colecao = 'Operation Bravo';
 
 -- ---------------------------------------------------------------------
 -- 11.2 Variantes que nao existem no jogo (CSGO-API):
---      - a Desert Eagle | Blaze so existe na The Dust Collection, que nao
---        tem versao StatTrak; o exemplar INS-EQ-0005 estava como StatTrak;
---      - o AWP | Asiimov so sai da Operation Phoenix Weapon Case, sem
---        versao Souvenir; o exemplar INS-EQ-0003 estava como Souvenir.
+--      - INS-EQ-0005 (Desert Eagle | Blaze) fica sem StatTrak: o modelo
+--        so existe na The Dust Collection, que nao tem versao StatTrak;
+--      - INS-EQ-0003 (AWP | Asiimov) fica sem Souvenir: o modelo so sai
+--        da Operation Phoenix Weapon Case, sem versao Souvenir.
 -- ---------------------------------------------------------------------
 UPDATE equipamento
    SET stattrak_flag = FALSE
@@ -1521,10 +1469,10 @@ UPDATE equipamento
  WHERE item_instancia_id = (SELECT id FROM item_instancia WHERE numero_inspecao = 'INS-EQ-0003');
 
 -- ---------------------------------------------------------------------
--- 11.3 A Capsula Ambush do 03 (renomeada na 11.4) estava anunciada por
---      R$ 680,00 (com venda pendente), enquanto as vendas simuladas do
---      modelo ficam perto de R$ 7. O valor certo e R$ 6,80: anuncio, venda
---      e pagamento juntos (RS-13: pagamento = valor da venda).
+-- 11.3 Capsula Ambush do 03 (renomeada na 11.4): o preco passa de
+--      R$ 680,00 para R$ 6,80, perto das vendas simuladas do modelo, no
+--      anuncio, na venda pendente e no pagamento (RS-13: pagamento =
+--      valor da venda).
 -- ---------------------------------------------------------------------
 UPDATE anuncio a
    SET preco = 6.80
@@ -1541,9 +1489,6 @@ UPDATE pagamento
 
 -- ---------------------------------------------------------------------
 -- 11.4 ABERTURAS coerentes com o conteudo dos recipientes (CSGO-API).
---      No 03, a Caixa Fracture dava uma AK-47 | Redline, que sai da
---      Operation Phoenix Weapon Case; a chave era a do CS:GO, que nao abre
---      essa caixa; e a Capsula Ambush dava adesivos que nao estao nela.
 --      abertura_recipiente nao aceita UPDATE (trigger), entao o ajuste e
 --      nos modelos e no item obtido:
 --      - Caixa Fracture -> Caixa Phoenix (The Phoenix Collection, a mesma
@@ -1551,9 +1496,8 @@ UPDATE pagamento
 --      - Chave de Caixa -> Chave da Caixa Phoenix;
 --      - Capsula Ambush -> Capsula Katowice 2014 Challengers, que tem o
 --        adesivo Natus Vincere (Holo) da imagem do catalogo;
---      - o adesivo da 5a abertura (INS-CO-0013) era Crown (Foil), que sai
---        de outra capsula; passa a ser Natus Vincere (Holo), como os
---        das outras duas aberturas de capsula.
+--      - adesivo da 5a abertura (INS-CO-0013) -> Natus Vincere (Holo),
+--        como os das outras duas aberturas de capsula.
 -- ---------------------------------------------------------------------
 UPDATE item_catalogo
    SET nome_item   = 'Caixa Phoenix',
@@ -1690,65 +1634,3 @@ DROP FUNCTION pg_temp.fator_desgaste(NUMERIC);
 DROP FUNCTION pg_temp.sorteio(TEXT);
 
 COMMIT;
-
--- =====================================================================
--- RESUMO: o banco depois de 01 + 02 + 03 + 04
---
---   tabela                  03    04 (novos)   total
---   colecao                 12        17          29   (16 da secao 1 + 2 da 11.1 - 1 vazia)
---   item_catalogo           21        59          80   modelos
---     equipamento           11        49          60   (19 rifles, 11 pistolas, 8 SMGs,
---                                                       5 escopetas, 3 metralhadoras,
---                                                       7 facas, 7 luvas)
---     cosmetico              4         5           9   (5 adesivos, 4 chaveiros)
---     consumivel             6         5          11   (4 caixas, 3 capsulas,
---                                                       2 chaves, 2 grafites)
---   item_instancia          54       243         297   itens
---     equipamento           16       176         192
---     cosmetico             20        36          56   (12 aplicados em armas)
---     consumivel            18        31          49
---   aplicacao_cosmetico      7        12          19
---   anuncio                 19       479         498
---     vendido               10       384         394
---     ativo                  6        74          80   (vencem entre 01/04 e 19/09/2027)
---     cancelado              2        13          15
---     expirado               1         8           9
---   venda                   12       384         396   (394 concluidas)
---   pagamento               12       384         396
---   nota_fiscal             10       384         394
---   avaliacao               10       148         158
---   avaliacao_venda          5       148         153
---
---   Vendas concluidas por mes (inclui as 10 do 03, em jan-fev/2026):
---     11/2025  26 | 12/2025  36 | 01/2026  47 | 02/2026  27
---     03/2026  25 | 04/2026  40 | 05/2026  27 | 06/2026  30
---     07/2026  37 | 08/2026  33 | 09/2026  38 | 10/2026  28   = 394
---   Todos os 80 modelos tem 3 ou mais vendas; 132 itens foram revendidos.
---   Protocolos novos: VND-2025-0013 a VND-2026-0396; tickets novos:
---   TKT-2025-0011 a TKT-2026-0158. As sequencias ficam em 396 e 158: a
---   proxima compra da aplicacao sera VND-2026-0397.
---   A numeracao segue a ordem de cadastro, nao a cronologica: as 12 vendas
---   do 03 (jan-fev/2026) mantem 0001-0012 e as do 04 continuam de 0013,
---   inclusive as de nov-dez/2025 (vale tambem para os tickets e para o
---   numero da NF).
---   Notas fiscais novas: chave com o ano/mes da EMISSAO (2511 a 2610).
---
---   Precos: a primeira e a ultima venda de cada modelo sao da mesma
---   classe (exemplares de referencia; ver o cabecalho), e o ranking de
---   maiores variacoes (analise.sql) vai de -26,5% a +32,6%: a tendencia
---   simulada de cada modelo mais o ruido.
---   As 290 vendas de equipamento cobrem os 5 desgastes:
---     FN 25 | MW 25 | FT 216 | WW 11 | BS 13   (24 StatTrak, 10 Souvenir)
---   26 modelos tem vendas em mais de um desgaste e 14 tem vendas com e
---   sem StatTrak. Comparando cada venda com as FT comuns do mesmo modelo
---   no mesmo trimestre, o preco medio fica em FN 1,26 | MW 1,10 |
---   FT 1,00 | WW 0,90 | BS 0,77, e o StatTrak custa cerca de 1,45 vez o
---   comum do mesmo desgaste.
---   Equipamentos (03 + 04): 30 StatTrak e 5 Souvenir.
---
---   Usuario de demonstracao isizinha: 34 itens (23 prontos para anunciar,
---   entre armas, adesivos/chaveiros e consumiveis), 7 anuncios ativos,
---   3 encerrados, 26 vendas e 41 compras. 27 compras ainda nao foram
---   avaliadas por ela, entre elas todas as de setembro e outubro/2026
---   (botao "Avaliar vendedor" na aba Comprados).
--- =====================================================================

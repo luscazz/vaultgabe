@@ -38,7 +38,7 @@ O enunciado pede um de dois temas. O VaultGabe segue o de **buscas complexas de 
 
 Não há login: o seletor **"Entrar como"**, no topo, escolhe o usuário de demonstração (padrão: `isizinha`).
 
-Usuários, preços, vendas e avaliações são dados simulados para demonstração; o site avisa isso no rodapé e na Análise de mercado.
+Usuários, preços, vendas e avaliações são dados simulados para demonstração.
 
 O escopo detalhado de cada página está em [`docs/escopo.md`](docs/escopo.md).
 
@@ -66,7 +66,7 @@ vaultgabe/
 │   ├── parametros.js     Lê e valida os parâmetros que chegam do navegador
 │   └── rotas/            Rotas da API (api.js + um arquivo por página ou janela) e das páginas (paginas.js)
 ├── views/             Páginas HTML
-├── tests/             Testes do banco (npm test) e da API (npm run test:neon)
+├── tests/             Testes do banco (npm test)
 ├── .env.example       Modelo das variáveis de ambiente
 ├── render.yaml        Configuração da hospedagem no Render
 └── package.json
@@ -80,8 +80,8 @@ Requisitos: **Node.js 22.9 ou mais novo**.
    ```bash
    npm install
    ```
-2. Copie `.env.example` para um arquivo chamado `.env` e preencha as URLs de conexão do Neon: `DATABASE_URL` (branch `development`, usada pelo servidor e pelos testes) e `DATABASE_URL_PRODUCAO` (branch `production`, usada por `npm run banco:producao`; `npm run banco:dev` e `npm run test:neon` também a leem, só para se recusarem a rodar na produção).
-3. Monte o banco (na primeira vez ou para restaurar os dados de demonstração):
+2. Copie `.env.example` para um arquivo chamado `.env` e preencha as URLs de conexão do Neon: `DATABASE_URL` (branch `development`, usada pelo servidor) e `DATABASE_URL_PRODUCAO` (branch `production`; `npm run banco:dev` a lê só para se recusar a rodar na produção).
+3. Monte o banco (na primeira vez ou para restaurar os dados de demonstração). Numa branch nova do Neon, configure antes o fuso `America/Sao_Paulo`, como explica o [`database/README.md`](database/README.md):
    ```bash
    npm run banco:dev
    ```
@@ -89,48 +89,35 @@ Requisitos: **Node.js 22.9 ou mais novo**.
    ```bash
    npm run dev
    ```
-   e acesse **http://localhost:3000**. Com `npm run dev`, o servidor reinicia automaticamente a cada alteração no código.
-
-> O arquivo `.env` contém a senha do banco e **nunca** deve ser enviado ao GitHub (ele já está no `.gitignore`).
-
-Os scripts do banco estão em `database/` (ver [`database/README.md`](database/README.md)).
+   e acesse **http://localhost:3000**.
 
 ## API
 
 O navegador busca os dados em rotas `/api/...`. Cada rota executa uma consulta de [`database/consultas/`](database/consultas/README.md) pelo nome; o SQL nunca vem do navegador.
 
-| Rota | O que devolve |
+| Rota | Para que serve |
 |---|---|
-| `GET /api/saude` | Situação do servidor e do banco (versão, fuso, tempo de resposta) |
-| `GET /api/usuarios` | Usuários do seletor "Entrar como" |
-| `GET /api/usuarios/:id` | Perfil público: reputação, números, anúncios ativos, avaliações recebidas e trocas |
-| `GET /api/catalogo/filtros` | Categorias, raridades e coleções para os filtros, com quantidades |
-| `GET /api/catalogo` | Busca do catálogo. Parâmetros opcionais: `busca`, `categoria`, `raridade`, `colecao`, `preco_min`, `preco_max`, `so_a_venda`, `desgaste` (`FN` `MW` `FT` `WW` `BS`), `stattrak`, `souvenir`, `com_adesivos`, `ordenar` (`menor_preco`, `maior_preco`, `mais_ofertas`, `mais_vendidas`, `nome`) |
-| `GET /api/skins/:id` | Dados de uma skin (modelo): categoria, raridade, coleção, faixa de float e indicadores de preço |
-| `GET /api/skins/:id/ofertas` | Ofertas ativas da skin, com float, desgaste, cosméticos aplicados, vendedor e análise do preço. Parâmetros opcionais: `desgaste`, `stattrak`, `souvenir`, `com_adesivos`, `ordenar` (`preco` ou `float`) e `usuario` (marca os anúncios do próprio usuário) |
-| `GET /api/skins/:id/historico` | Vendas concluídas da skin e o resumo por mês |
-| `POST /api/compras` | Compra simulada de um anúncio. Corpo: `{ "anuncio_id", "comprador_id", "metodo" }`, com `metodo` entre `pix`, `cartao_credito`, `cartao_debito`, `boleto` e `saldo_steam`. Devolve 201 com o protocolo da venda e a chave da nota fiscal |
-| `GET /api/inventario?usuario=` | Itens do usuário com a situação de cada um (disponível, anunciado, aplicado...) e o resumo. Opcionais: `tipo` (`equipamento`, `cosmetico`, `consumivel`) e `negociaveis` (só os itens prontos para anunciar: disponíveis, negociáveis e sem anúncio aberto; o `resumo` sempre traz todos os itens) |
-| `GET /api/anuncios/analise-preco?item=` | Menor oferta atual (sem as reservadas) e média das vendas da mesma versão do item (desgaste, StatTrak e Souvenir) ou, com menos de 2 vendas, de todo o modelo (`base_media`); com `preco`, a diferença para essa média |
-| `POST /api/anuncios` | Publica um anúncio. Corpo: `{ "item_id", "usuario_id", "preco", "dias" }` (`dias`: 7, 14 ou 30). Devolve 201 |
-| `POST /api/anuncios/:id/cancelar` | Cancela um anúncio aberto do próprio usuário. Corpo: `{ "usuario_id" }` |
-| `GET /api/negociacoes?usuario=` | Anúncios à venda, vendas, compras e anúncios encerrados do usuário, com os números de cada aba |
-| `POST /api/avaliacoes` | Avalia o vendedor de uma compra concluída. Corpo: `{ "venda_id", "autor_id", "nota", "comentario" }`. Devolve 201 com o ticket |
-| `GET /api/analise` | Indicadores, vendas por mês, preço médio por raridade, volume por categoria e rankings. Opcionais: `inicio`, `fim` (`AAAA-MM-DD`) e `categoria` |
-
-Parâmetros que se repetem aceitam vários valores (`?categoria=1&categoria=2` ou `?categoria=1,2`); valor inválido devolve 400. Erros de regra de negócio voltam como `{ "erro": "mensagem" }`, com o status adequado (400, 404, 409, 422 ou 503 se o banco estiver fora do ar).
+| `GET /api/saude` | Informar a situação do servidor e do banco |
+| `GET /api/usuarios` | Listar os usuários do seletor "Entrar como" |
+| `GET /api/usuarios/:id` | Mostrar o perfil público de um usuário |
+| `GET /api/catalogo/filtros` | Carregar as opções dos filtros do catálogo |
+| `GET /api/catalogo` | Buscar skins no catálogo |
+| `GET /api/skins/:id` | Mostrar os dados de uma skin |
+| `GET /api/skins/:id/ofertas` | Listar as ofertas ativas de uma skin |
+| `GET /api/skins/:id/historico` | Mostrar o histórico de vendas de uma skin |
+| `POST /api/compras` | Comprar um anúncio (pagamento simulado) |
+| `GET /api/inventario` | Listar os itens do usuário |
+| `GET /api/anuncios/analise-preco` | Analisar o preço de um item ao anunciar |
+| `POST /api/anuncios` | Publicar um anúncio |
+| `POST /api/anuncios/:id/cancelar` | Cancelar um anúncio aberto |
+| `GET /api/negociacoes` | Listar os anúncios, as vendas e as compras do usuário |
+| `POST /api/avaliacoes` | Avaliar o vendedor de uma compra concluída |
+| `GET /api/analise` | Carregar os indicadores, gráficos e rankings da Análise de mercado |
 
 ## Testes
 
-| Comando | O que faz |
-|---|---|
-| `npm test` | Monta o banco em memória, sem internet, e confere as regras de negócio, as operações (compra, anúncio, cancelamento e avaliação), as 34 consultas e os dados de demonstração |
-| `npm run test:neon` | Os mesmos testes, mais os da API, na branch `development` do Neon, que é recarregada no fim. Não roda na produção |
-
-Os anúncios de demonstração vencem a partir de 01/04/2027. Depois dessa data, os testes de compra só voltam a passar com validades novas nos dados.
+O comando `npm test` monta o banco em memória, sem internet, e confere as regras de negócio, as operações (compra, anúncio, cancelamento e avaliação), as 34 consultas e os dados de demonstração.
 
 ## Publicação
 
-O site roda no Render, configurado pelo [`render.yaml`](render.yaml), com o banco na branch `production` do Neon. A URL do banco fica na variável `DATABASE_URL`, definida no painel do Render (nunca no repositório), e cada commit na branch `main` publica uma nova versão.
-
-Para recriar o banco de produção, quando os scripts de `database/` mudam ou para restaurar os dados de demonstração, use `npm run banco:producao -- --confirmo`.
+O site roda no Render, configurado pelo [`render.yaml`](render.yaml), com o banco na branch `production` do Neon.
